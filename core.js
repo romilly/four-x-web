@@ -3,9 +3,9 @@ const TYPES=['fighter','colony','scout'];
 const COST={fighter:15,colony:25,scout:8};
 const SHIP={fighter:['Fighter','Fighters'],colony:['Colony ship','Colony ships'],scout:['Scout','Scouts']};
 const TECH={
-  weapons:{name:'Weapons',max:4,desc:'+10% hit chance per level for your fighters and colony batteries.'},
+  weapons:{name:'Weapons',max:4,desc:'+10% hit chance per level for your fighters and planetary batteries.'},
   drives:{name:'Hyperdrives',max:2,desc:'Every fleet makes one more jump per turn.'},
-  terraform:{name:'Terraforming',max:3,desc:'+1 population cap at every colony you hold.'}
+  terraform:{name:'Terraforming',max:3,desc:'+1 population cap on every habitable planet you hold.'}
 };
 const techCost=l=>40+40*l;
 // Difficulty shapes only the rivals: what they can see, when they strike, how fast they build, how much they earn.
@@ -18,6 +18,28 @@ const diffOf=s=>DIFF[s.difficulty]||DIFF.normal;
 const EMP=[{name:'Aurum Concord',color:'#f2b544'},{name:'Veth Hegemony',color:'#4fd1c5'},{name:'Ossari Choir',color:'#ef6f8a'}];
 const NAMES=['Achird','Brisa','Caph','Diadem','Elnath','Fawaris','Gienah','Hadar','Izar','Jabbah','Kochab','Lesath','Markab','Nashira','Okab','Phact',
   'Rasalas','Sadr','Tejat','Unuk','Vega','Wezen','Xamidimura','Yed','Zaniah','Alkes','Biham','Celaeno','Dabih','Errai','Furud','Hamal'];
+
+// Stars: 0 blue-white, 1 white, 2 yellow, 3 orange, 4 red.
+const STAR_KINDS=['Blue-white','White','Yellow','Orange','Red'];
+// Planet habitability is base + a roll below spread; 0 means nobody can live there.
+const PLANET_TYPES={
+  terran:{name:'Terran',base:5,spread:2},
+  ocean:{name:'Ocean',base:4,spread:3},
+  arid:{name:'Arid',base:2,spread:3},
+  tundra:{name:'Tundra',base:1,spread:3},
+  toxic:{name:'Toxic',base:0,spread:2},
+  barren:{name:'Barren',base:0,spread:1},
+  gas:{name:'Gas giant',base:0,spread:1}
+};
+// How each kind of star shapes its system: the range of planet counts and the odds of each planet type.
+const SYSTEMS=[
+  {count:[0,3],odds:{barren:4,gas:3,toxic:2,arid:1}},
+  {count:[1,4],odds:{barren:2,gas:2,arid:2,tundra:1,ocean:1,toxic:1}},
+  {count:[2,5],odds:{terran:3,ocean:3,arid:2,tundra:1,gas:2,barren:1}},
+  {count:[1,5],odds:{terran:1,ocean:2,arid:2,tundra:2,gas:2,barren:2}},
+  {count:[0,3],odds:{tundra:3,barren:3,toxic:2,gas:1,arid:1}}
+];
+const ROMAN=['I','II','III','IV','V','VI'];
 
 function makeRng(seed){
   let a=seed>>>0;
@@ -49,31 +71,47 @@ function route(adj,from,to){
 const fleetSpeed=(s,f)=>1+s.empires[f.owner].tech.drives+(f.ships.every(x=>x.type==='scout')?1:0);
 const countTypes=f=>{const c={fighter:0,colony:0,scout:0};for(const x of f.ships)c[x.type]++;return c;};
 const has=(f,t)=>f.ships.some(x=>x.type===t);
-const capOf=(s,st)=>st.cap>0?st.cap+(st.owner>=0?s.empires[st.owner].tech.terraform:0):0;
-const incomeOf=(s,e)=>{const base=2+s.stars.reduce((a,st)=>a+(st.owner===e?st.pop:0),0);return e===0?base:Math.round(base*diffOf(s).income);};
+const planetsAt=(s,star)=>s.planets.filter(p=>p.star===star);
+const capOf=(s,p)=>p.cap>0?p.cap+(p.owner>=0?s.empires[p.owner].tech.terraform:0):0;
+const incomeOf=(s,e)=>{const base=2+s.planets.reduce((a,p)=>a+(p.owner===e?p.pop:0),0);return e===0?base:Math.round(base*diffOf(s).income);};
 
+// Sensor range: every star where the empire holds a planet or has a fleet, plus the stars one jump away.
 function vision(s,e){
   const adj=adjOf(s),v=s.stars.map(()=>false),src=new Set();
-  for(const st of s.stars)if(st.owner===e)src.add(st.id);
+  for(const p of s.planets)if(p.owner===e)src.add(p.star);
   for(const f of s.fleets)if(f.owner===e)src.add(f.at);
   for(const i of src){v[i]=true;for(const j of adj[i])v[j]=true;}
   return v;
 }
-
-// Each empire remembers every star as it last saw it: null until seen, then {owner,pop}.
+// Each empire remembers which stars it has charted, and every planet's owner and population as last seen.
 function updateIntel(s){
-  s.intel=s.empires.map((e,k)=>{const v=vision(s,k);return s.intel[k].map((m,i)=>v[i]?{owner:s.stars[i].owner,pop:s.stars[i].pop}:m);});
+  s.intel=s.intel.map((m,k)=>{
+    const v=vision(s,k);
+    return {stars:m.stars.map((x,i)=>x||v[i]),planets:s.planets.map(p=>v[p.star]?{owner:p.owner,pop:p.pop}:m.planets[p.id]??null)};
+  });
 }
-// What empire e can know: live detail within sensor range, memories elsewhere, nothing at unseen stars.
+// What empire e can know: live detail within sensor range, memories elsewhere, nothing about uncharted stars.
 // Rival controllers receive this view, never the full state.
 function fogView(s,e){
-  const v=vision(s,e),mem=s.intel[e];
+  const v=vision(s,e),I=s.intel[e];
   return {...s,
-    stars:s.stars.map((st,i)=>v[i]?{...st}:mem[i]?{...st,owner:mem[i].owner,pop:mem[i].pop}:{...st,cap:0,owner:-1,pop:0,unknown:true}),
+    stars:s.stars.map((st,i)=>I.stars[i]||v[i]?{...st}:{...st,unknown:true}),
+    planets:s.planets.filter(p=>v[p.star]||I.stars[p.star]).map(p=>v[p.star]||!I.planets[p.id]?{...p}:{...p,owner:I.planets[p.id].owner,pop:I.planets[p.id].pop}),
     fleets:s.fleets.filter(f=>f.owner===e||v[f.at]).map(f=>({...f,ships:f.ships.map(x=>({...x}))}))};
 }
-
 const sightOf=(s,e)=>diffOf(s).fog?fogView(s,e):s;
+
+function rollPlanets(rng,st){
+  const sys=SYSTEMS[st.kind],n=sys.count[0]+rng.int(sys.count[1]-sys.count[0]+1);
+  const odds=Object.entries(sys.odds),total=odds.reduce((a,[,w])=>a+w,0),out=[];
+  for(let k=0;k<n;k++){
+    let r=rng.next()*total,type=odds[0][0];
+    for(const[t,w]of odds){if(r<w){type=t;break;}r-=w;}
+    const pt=PLANET_TYPES[type];
+    out.push({star:st.id,type,cap:pt.base+rng.int(pt.spread),owner:-1,pop:0});
+  }
+  return out;
+}
 
 function newGame(seed,difficulty='normal'){
   const rng=makeRng(seed),N=28,R=46,stars=[];
@@ -84,12 +122,7 @@ function newGame(seed,difficulty='normal'){
   }
   const names=NAMES.slice();
   for(let i=names.length-1;i>0;i--){const j=rng.int(i+1);[names[i],names[j]]=[names[j],names[i]];}
-  for(const st of stars){
-    st.name=names[st.id];
-    st.cap=rng.next()<0.24?0:1+rng.int(6);
-    st.kind=rng.int(5);
-    st.owner=-1;st.pop=0;
-  }
+  for(const st of stars){st.name=names[st.id];st.kind=rng.int(5);}
   // Hyperlanes: the Gabriel graph — a lane joins two stars when no third star sits inside the circle they span.
   const n=stars.length,d2=(i,j)=>(stars[i].x-stars[j].x)**2+(stars[i].y-stars[j].y)**2,lanes=[];
   for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){
@@ -101,28 +134,37 @@ function newGame(seed,difficulty='normal'){
   let h0=rng.int(n);const h1=argmax(i=>D(h0,i));h0=argmax(i=>D(h1,i));
   const h2=argmax(i=>Math.min(D(h0,i),D(h1,i)));
   const homes=[h0,h1,h2];
-  const s={seed,difficulty:DIFF[difficulty]?difficulty:'normal',turn:1,rngState:rng.state,stars,lanes,fleets:[],nextFleet:1,nextShip:1,explored:stars.map(()=>false),events:[],over:null,
+  for(const h of homes)stars[h].kind=2;
+  const bySystem=stars.map(st=>rollPlanets(rng,st));
+  const s={seed,difficulty:DIFF[difficulty]?difficulty:'normal',turn:1,rngState:0,stars,lanes,planets:[],fleets:[],nextFleet:1,nextShip:1,events:[],over:null,
     empires:EMP.map((e,i)=>({id:i,name:e.name,color:e.color,credits:20,tech:{weapons:0,drives:0,terraform:0},alive:true,home:homes[i]}))};
   const adj=adjOf(s);
   homes.forEach((h,i)=>{
-    Object.assign(stars[h],{cap:6,owner:i,pop:3,kind:2});
-    if(!adj[h].some(j=>stars[j].cap>=2&&!homes.includes(j))){const j=adj[h].find(j=>!homes.includes(j));if(j!=null)stars[j].cap=3;}
-    s.fleets.push({id:s.nextFleet++,owner:i,at:h,dest:null,
+    // Every homeworld is a rich terran planet, and a habitable free planet waits within one jump.
+    const sys=bySystem[h];
+    if(!sys.length)sys.push({star:h});
+    Object.assign(sys[0],{type:'terran',cap:6,owner:i,pop:3});
+    const near=[h,...adj[h].filter(j=>!homes.includes(j))];
+    if(!near.some(j=>bySystem[j].some(p=>p.owner<0&&p.cap>=2))){
+      const j=near[1]??h;bySystem[j].push({star:j,type:'ocean',cap:3,owner:-1,pop:0});
+    }
+    s.fleets.push({id:s.nextFleet++,owner:i,at:h,dest:null,target:null,
       ships:['fighter','fighter','colony','scout'].map(type=>({id:s.nextShip++,type}))});
   });
-  s.explored=vision(s,0);
-  s.intel=s.empires.map(()=>stars.map(()=>null));
+  for(const sys of bySystem)sys.forEach((p,k)=>s.planets.push({id:s.planets.length,star:p.star,name:`${stars[p.star].name} ${ROMAN[k]}`,type:p.type,cap:p.cap,owner:p.owner,pop:p.pop}));
+  s.rngState=rng.state;
+  s.intel=s.empires.map(()=>({stars:stars.map(()=>false),planets:s.planets.map(()=>null)}));
   updateIntel(s);
-  s.events=[{msg:`${stars[h0].name} awaits orders. Split your colony ship off the home fleet and send it to a nearby habitable star.`,kind:'colony',star:h0}];
+  s.events=[{msg:`${stars[h0].name} awaits orders. Split your colony ship off the home fleet, or tap ${stars[h0].name} twice to see its planets.`,kind:'colony',star:h0}];
   return s;
 }
 
-const clone=s=>({...s,stars:s.stars.map(x=>({...x})),empires:s.empires.map(e=>({...e,tech:{...e.tech}})),
-  fleets:s.fleets.map(f=>({...f,ships:f.ships.map(x=>({...x}))})),explored:s.explored.slice(),events:[]});
+const clone=s=>({...s,stars:s.stars.map(x=>({...x})),planets:s.planets.map(x=>({...x})),empires:s.empires.map(e=>({...e,tech:{...e.tech}})),
+  fleets:s.fleets.map(f=>({...f,ships:f.ships.map(x=>({...x}))})),intel:s.intel.map(m=>({stars:m.stars.slice(),planets:m.planets.slice()})),events:[]});
 
 // Applies one empire's orders, in the order given, to a (cloned) state.
-// Orders: research{tech} · move{fleet,to} · split{fleet,ships:{type:n},to} · merge{star} · build{star,kind}
-// Builds run last, so ships ordered this turn join a fleet parked at that star but cannot move until next turn.
+// Orders: research{tech} · move{fleet,to,target?} · split{fleet,ships:{type:n},to,target?} · target{fleet,planet} · merge{star} · build{star,kind}
+// A target is a planet: colony ships settle it, fighters besiege it. Builds run last, so new ships cannot move until next turn.
 function applyOrders(s,e,orders,say,withBuilds){
   const emp=s.empires[e];if(!emp.alive)return;
   const mineF=id=>s.fleets.find(f=>f.id===id&&f.owner===e);
@@ -134,7 +176,9 @@ function applyOrders(s,e,orders,say,withBuilds){
         if(e===0)say(`Research complete: ${TECH[o.tech].name} ${l+1}.`,'tech');
       }
     }else if(o.t==='move'){
-      const f=mineF(o.fleet);if(f)f.dest=o.to===f.at?null:o.to;
+      const f=mineF(o.fleet);if(f){f.dest=o.to===f.at?null:o.to;f.target=o.target??null;}
+    }else if(o.t==='target'){
+      const f=mineF(o.fleet);if(f)f.target=o.planet??null;
     }else if(o.t==='split'){
       const f=mineF(o.fleet);if(!f)continue;
       const take=[];
@@ -143,9 +187,9 @@ function applyOrders(s,e,orders,say,withBuilds){
         for(let i=f.ships.length-1;i>=0&&n>0;i--)if(f.ships[i].type===t){take.unshift(...f.ships.splice(i,1));n--;}
       }
       if(!take.length)continue;
-      const dest=o.to===f.at?null:o.to;
-      if(!f.ships.length){f.ships=take;f.dest=dest;continue;}
-      s.fleets.push({id:s.nextFleet++,owner:e,at:f.at,dest,ships:take});
+      const dest=o.to===f.at?null:o.to,target=o.target??null;
+      if(!f.ships.length){f.ships=take;f.dest=dest;f.target=target;continue;}
+      s.fleets.push({id:s.nextFleet++,owner:e,at:f.at,dest,target,ships:take});
     }else if(o.t==='merge'){
       const fs=s.fleets.filter(f=>f.owner===e&&f.at===o.star&&f.dest==null).sort((a,b)=>a.id-b.id);
       if(fs.length<2)continue;
@@ -157,16 +201,24 @@ function applyOrders(s,e,orders,say,withBuilds){
   for(const o of orders){
     if(o.t!=='build')continue;
     const st=s.stars[o.star],c=COST[o.kind];
-    if(!st||st.owner!==e||!c||emp.credits<c)continue;
+    if(!st||!s.planets.some(p=>p.star===o.star&&p.owner===e)||!c||emp.credits<c)continue;
     emp.credits-=c;
     let f=s.fleets.find(f=>f.owner===e&&f.at===o.star&&f.dest==null);
-    if(!f){f={id:s.nextFleet++,owner:e,at:o.star,dest:null,ships:[]};s.fleets.push(f);}
+    if(!f){f={id:s.nextFleet++,owner:e,at:o.star,dest:null,target:null,ships:[]};s.fleets.push(f);}
     f.ships.push({id:s.nextShip++,type:o.kind});
     if(e===0)say(`${SHIP[o.kind][0]} launched at ${st.name} and joined Fleet ${f.id}.`,'build',st.id);
   }
 }
 // What the state looks like once an empire's movement and research orders are applied (no builds, no turn).
 function previewOrders(state,e,orders){const s=clone(state);s.events=state.events;applyOrders(s,e,orders,()=>{},false);return s;}
+
+// The planet a parked fleet with a colony ship will settle this turn, or null.
+function settleChoice(s,f){
+  if(f.dest!=null||!has(f,'colony'))return null;
+  if(s.fleets.some(g=>g.at===f.at&&g.owner!==f.owner&&has(g,'fighter')))return null;
+  const free=planetsAt(s,f.at).filter(p=>p.owner<0&&p.cap>0);
+  return free.find(p=>p.id===f.target)||free.sort((a,b)=>b.cap-a.cap||a.id-b.id)[0]||null;
+}
 
 function resolveTurn(state,ordersBy,rng){
   const s=clone(state),adj=adjOf(s),ev=[];
@@ -183,19 +235,19 @@ function resolveTurn(state,ordersBy,rng){
   }
   const seeNow=vision(s,0);
   const nm=e=>e===0?'you':s.empires[e].name;
-  // 3. Combat and sieges
+  // 3. Combat, then sieges. Every inhabited planet has batteries that fire on hostile ships in its system.
   const hitP=e=>0.4+0.1*s.empires[e].tech.weapons;
   for(const st of s.stars){
-    const fl=s.fleets.filter(f=>f.at===st.id);
+    const fl=s.fleets.filter(f=>f.at===st.id),pl=planetsAt(s,st.id).filter(p=>p.owner>=0);
     let here=[];for(const f of fl)for(const x of f.ships)here.push({id:x.id,type:x.type,owner:f.owner});
-    const planet=st.owner>=0&&st.pop>0?st.owner:-1;
-    const parties=new Set(here.map(h=>h.owner));if(planet>=0)parties.add(planet);
+    if(!here.length)continue;
+    const parties=new Set(here.map(h=>h.owner));for(const p of pl)parties.add(p.owner);
     if(parties.size<2)continue;
     const before={};for(const h of here)before[h.owner]=(before[h.owner]||0)+1;
     let fought=false;
     for(let r=0;r<6;r++){
       const shooters=here.filter(h=>h.type==='fighter').map(h=>h.owner);
-      if(r===0&&planet>=0)for(let k=0;k<1+Math.floor(st.pop/3);k++)shooters.push(planet);
+      if(r===0)for(const p of pl)for(let k=0;k<1+Math.floor(p.pop/3);k++)shooters.push(p.owner);
       const dead=new Set();let any=false;
       for(const o of shooters){
         const foes=here.filter(h=>h.owner!==o);if(!foes.length)continue;
@@ -213,55 +265,62 @@ function resolveTurn(state,ordersBy,rng){
       if(losses.length&&(parties.has(0)||seeNow[st.id]))
         say(`Battle at ${st.name}: `+losses.map(([o,l])=>`${o===0?'you lost':s.empires[o].name+' lost'} ${l}`).join(', ')+'.','battle',st.id);
     }
-    if(st.owner>=0){
-      const defended=here.some(h=>h.owner===st.owner&&h.type==='fighter'),atk={};
-      for(const h of here)if(h.owner!==st.owner&&h.type==='fighter')atk[h.owner]=(atk[h.owner]||0)+1;
-      const keys=Object.keys(atk).map(Number);
-      if(!defended&&keys.length){
-        const a=keys.sort((x,y)=>atk[y]-atk[x]||x-y)[0],prev=st.owner;
-        st.pop-=Math.ceil(atk[a]/2);
-        if(st.pop<=0){
-          st.owner=a;st.pop=1;
-          if(a===0||prev===0||seeNow[st.id])say(a===0?`You captured ${st.name} from ${s.empires[prev].name}.`:`${s.empires[a].name} captured ${st.name}${prev===0?' from you':''}.`,'capture',st.id);
-        }else if(a===0||prev===0||seeNow[st.id])say(`${st.name} is under siege by ${nm(a)}. Population ${st.pop}.`,'siege',st.id);
-      }
+    // Fighters besiege one hostile planet per turn: their fleet's target, else the weakest. Planets whose owner has fighters here are defended.
+    const fighters={};for(const h of here)if(h.type==='fighter')fighters[h.owner]=(fighters[h.owner]||0)+1;
+    for(const a of Object.keys(fighters).map(Number).sort((x,y)=>fighters[y]-fighters[x]||x-y)){
+      const hostile=planetsAt(s,st.id).filter(p=>p.owner>=0&&p.owner!==a&&!fighters[p.owner]);
+      if(!hostile.length)continue;
+      const wanted=new Set(fl.filter(f=>f.owner===a&&f.target!=null&&f.ships.length).map(f=>f.target));
+      const p=hostile.find(p=>wanted.has(p.id))||hostile.sort((x,y)=>x.pop-y.pop||x.id-y.id)[0];
+      const prev=p.owner,tell=a===0||prev===0||seeNow[st.id];
+      p.pop-=Math.ceil(fighters[a]/2);
+      if(p.pop<=0){
+        p.owner=a;p.pop=1;
+        if(tell)say(a===0?`You captured ${p.name} from ${s.empires[prev].name}.`:`${s.empires[a].name} captured ${p.name}${prev===0?' from you':''}.`,'capture',st.id);
+      }else if(tell)say(`${p.name} is under siege by ${nm(a)}. Population ${p.pop}.`,'siege',st.id);
     }
   }
   s.fleets=s.fleets.filter(f=>f.ships.length);
-  // 4. Colonisation: an arrived fleet carrying a colony ship settles an unclaimed habitable star, unless enemy fighters are present
-  for(const st of s.stars){
-    if(st.owner>=0||st.cap<=0)continue;
-    const f=s.fleets.find(f=>f.at===st.id&&f.dest==null&&has(f,'colony')&&
-      !s.fleets.some(g=>g.at===st.id&&g.owner!==f.owner&&has(g,'fighter')));
-    if(!f)continue;
+  // 4. Colonisation: a parked fleet carrying a colony ship settles its target planet, else the most habitable free one
+  for(const f of s.fleets.slice()){
+    const p=settleChoice(s,f);if(!p)continue;
     f.ships.splice(f.ships.findIndex(x=>x.type==='colony'),1);
-    st.owner=f.owner;st.pop=1;
-    if(f.owner===0)say(`New colony founded at ${st.name}.`,'colony',st.id);
-    else if(seeNow[st.id])say(`${s.empires[f.owner].name} settled ${st.name}.`,'colony',st.id);
+    p.owner=f.owner;p.pop=1;if(f.target===p.id)f.target=null;
+    if(f.owner===0)say(`New colony founded on ${p.name}.`,'colony',p.star);
+    else if(seeNow[p.star])say(`${s.empires[f.owner].name} settled ${p.name}.`,'colony',p.star);
   }
   s.fleets=s.fleets.filter(f=>f.ships.length);
   // 5. Growth and income
-  for(const st of s.stars){
-    if(st.owner<0)continue;
-    const cap=capOf(s,st);
-    if(st.pop<cap&&(s.turn+st.id)%2===0)st.pop++;
-    if(st.pop>cap)st.pop=cap;
+  for(const p of s.planets){
+    if(p.owner<0)continue;
+    const cap=capOf(s,p);
+    if(p.pop<cap&&(s.turn+p.id)%2===0)p.pop++;
+    if(p.pop>cap)p.pop=cap;
   }
   for(const emp of s.empires)if(emp.alive)emp.credits+=incomeOf(s,emp.id);
   // 6. Elimination
   for(const emp of s.empires){
     if(!emp.alive)continue;
-    const alive=s.stars.some(st=>st.owner===emp.id)||s.fleets.some(f=>f.owner===emp.id&&has(f,'colony'));
+    const alive=s.planets.some(p=>p.owner===emp.id)||s.fleets.some(f=>f.owner===emp.id&&has(f,'colony'));
     if(!alive){emp.alive=false;s.fleets=s.fleets.filter(f=>f.owner!==emp.id);say(emp.id===0?'Your empire has fallen.':`The ${emp.name} has fallen.`,'fall');}
   }
   const left=s.empires.filter(e=>e.alive);
   if(!s.empires[0].alive)s.over={win:false,turn:s.turn};
   else if(left.length===1)s.over={win:true,turn:s.turn};
-  // 7. Charting
-  const fresh=[];
-  s.explored=s.explored.map((x,i)=>{if(!x&&seeNow[i])fresh.push(i);return x||seeNow[i];});
-  if(fresh.length)say('Charted '+fresh.map(i=>`${s.stars[i].name} (${s.stars[i].cap?'hab '+s.stars[i].cap:'barren'})`).join(', ')+'.','chart',fresh[0]);
+  // 7. Targets that no longer make sense are dropped
+  for(const f of s.fleets){
+    if(f.target==null)continue;
+    const p=s.planets[f.target];
+    if(!p||p.owner===f.owner||(p.star!==f.at&&p.star!==f.dest))f.target=null;
+  }
+  // 8. Charting
+  const was=state.intel[0].stars;
   updateIntel(s);
+  const fresh=s.intel[0].stars.map((x,i)=>x&&!was[i]?i:-1).filter(i=>i>=0);
+  if(fresh.length)say('Charted '+fresh.map(i=>{
+    const ps=planetsAt(s,i),best=Math.max(0,...ps.map(p=>p.cap));
+    return `${s.stars[i].name} (${ps.length?`${ps.length} ${ps.length===1?'planet':'planets'}${best?', best hab '+best:', none habitable'}`:'no planets'})`;
+  }).join(', ')+'.','chart',fresh[0]);
   s.turn++;s.events=ev;
   return {state:s,events:ev};
 }
@@ -278,9 +337,10 @@ function aiOrders(s,e,rng){
   const opts=Object.keys(TECH).filter(k=>emp.tech[k]<TECH[k].max).sort((a,b)=>emp.tech[a]-emp.tech[b]||prio.indexOf(a)-prio.indexOf(b));
   const nextTech=opts[0];
   if(s.turn>6&&nextTech&&cash>=techCost(emp.tech[nextTech])){out.push({t:'research',tech:nextTech});cash-=techCost(emp.tech[nextTech]);}
-  const mine=v.stars.filter(st=>st.owner===e),fleets=v.fleets.filter(f=>f.owner===e);
-  const claimed=new Set(fleets.filter(f=>f.dest!=null&&has(f,'colony')).map(f=>f.dest));
-  const free=v.stars.filter(st=>st.owner<0&&st.cap>0);
+  const mine=v.planets.filter(p=>p.owner===e),myStars=new Set(mine.map(p=>p.star));
+  const fleets=v.fleets.filter(f=>f.owner===e);
+  const claimed=new Set(fleets.filter(f=>has(f,'colony')&&f.target!=null).map(f=>f.target));
+  const free=v.planets.filter(p=>p.owner<0&&p.cap>0);
   let colonyShips=0;
   for(const f of fleets){
     const n=countTypes(f).colony;colonyShips+=n;
@@ -288,31 +348,32 @@ function aiOrders(s,e,rng){
     const d=hops(adj,f.at);
     for(let k=0;k<n;k++){
       let best=null,bs=Infinity;
-      for(const st of free){if(claimed.has(st.id)||d[st.id]===Infinity||st.id===f.at)continue;const sc=d[st.id]*2-st.cap;if(sc<bs){bs=sc;best=st;}}
+      for(const p of free){if(claimed.has(p.id)||d[p.star]===Infinity)continue;const sc=d[p.star]*2-p.cap;if(sc<bs){bs=sc;best=p;}}
       if(!best)break;
-      claimed.add(best.id);out.push({t:'split',fleet:f.id,ships:{colony:1},to:best.id});
+      claimed.add(best.id);out.push({t:'split',fleet:f.id,ships:{colony:1},to:best.star,target:best.id});
     }
   }
-  const yard=mine.slice().sort((a,b)=>b.pop-a.pop||a.id-b.id)[0];
-  if(yard){
-    const open=free.filter(st=>!claimed.has(st.id)).length;
-    if(open>0&&colonyShips<2&&cash>=COST.colony){out.push({t:'build',star:yard.id,kind:'colony'});cash-=COST.colony;}
+  const popAt={};for(const p of mine)popAt[p.star]=(popAt[p.star]||0)+p.pop;
+  const yard=Object.keys(popAt).map(Number).sort((a,b)=>popAt[b]-popAt[a]||a-b)[0];
+  if(yard!=null){
+    const open=free.filter(p=>!claimed.has(p.id)).length;
+    if(open>0&&colonyShips<2&&cash>=COST.colony){out.push({t:'build',star:yard,kind:'colony'});cash-=COST.colony;}
     const reserve=s.turn>6&&nextTech?Math.min(techCost(emp.tech[nextTech]),60):0;
-    for(let k=0;k<diffOf(s).builds&&cash-COST.fighter>=reserve;k++){out.push({t:'build',star:yard.id,kind:'fighter'});cash-=COST.fighter;}
+    for(let k=0;k<diffOf(s).builds&&cash-COST.fighter>=reserve;k++){out.push({t:'build',star:yard,kind:'fighter'});cash-=COST.fighter;}
   }
-  const targets=v.stars.filter(st=>st.owner>=0&&st.owner!==e);
+  const targets=v.planets.filter(p=>p.owner>=0&&p.owner!==e);
   if(s.turn>=diffOf(s).attackTurn&&targets.length){
     const need=3+Math.floor(s.turn/25);
     for(const f of fleets){
       if(f.dest!=null)continue;
       const n=countTypes(f).fighter;if(n<need)continue;
       const d=hops(adj,f.at);let best=null,bs=Infinity;
-      for(const st of targets){const sc=d[st.id]*3+st.pop;if(sc<bs){bs=sc;best=st;}}
-      const send=n-(v.stars[f.at].owner===e?1:0);
-      if(best&&send>0)out.push({t:'split',fleet:f.id,ships:{fighter:send},to:best.id});
+      for(const p of targets){const sc=d[p.star]*3+p.pop;if(sc<bs){bs=sc;best=p;}}
+      const send=n-(myStars.has(f.at)?1:0);
+      if(best&&send>0)out.push({t:'split',fleet:f.id,ships:{fighter:send},to:best.star,target:best.id});
     }
   }
-  // Exploration: scouts head for the nearest unseen star; idle strike stacks do too once nothing hostile is known.
+  // Exploration: scouts head for the nearest uncharted star; idle strike stacks do too once nothing hostile is known.
   const scouted=new Set(fleets.filter(f=>f.dest!=null).map(f=>f.dest));
   const nearestUnknown=at=>{const d=hops(adj,at);let best=null,bd=Infinity;
     for(const st of v.stars)if(st.unknown&&!scouted.has(st.id)&&d[st.id]<bd){bd=d[st.id];best=st.id;}return best;};
@@ -321,10 +382,11 @@ function aiOrders(s,e,rng){
     const c=countTypes(f);
     if(c.scout){const to=nearestUnknown(f.at);out.push({t:'split',fleet:f.id,ships:{scout:c.scout},to:to??rng.int(v.stars.length)});if(to!=null)scouted.add(to);}
     if(!targets.length&&s.turn>=diffOf(s).attackTurn&&c.fighter>=3+Math.floor(s.turn/25)){
-      const to=nearestUnknown(f.at);if(to!=null){scouted.add(to);out.push({t:'split',fleet:f.id,ships:{fighter:c.fighter-(v.stars[f.at].owner===e?1:0)},to});}
+      const to=nearestUnknown(f.at);if(to!=null){scouted.add(to);out.push({t:'split',fleet:f.id,ships:{fighter:c.fighter-(myStars.has(f.at)?1:0)},to});}
     }
   }
   return out;
 }
 // CORE-END
-if(typeof module!=='undefined')module.exports={TYPES,COST,SHIP,TECH,techCost,DIFF,diffOf,EMP,makeRng,adjOf,hops,route,fleetSpeed,countTypes,has,capOf,incomeOf,vision,updateIntel,fogView,sightOf,newGame,applyOrders,previewOrders,resolveTurn,aiOrders};
+if(typeof module!=='undefined')module.exports={TYPES,COST,SHIP,TECH,techCost,DIFF,diffOf,EMP,STAR_KINDS,PLANET_TYPES,SYSTEMS,makeRng,adjOf,hops,route,
+  fleetSpeed,countTypes,has,planetsAt,capOf,incomeOf,vision,updateIntel,fogView,sightOf,newGame,applyOrders,previewOrders,settleChoice,resolveTurn,aiOrders};
