@@ -155,7 +155,7 @@ function newGame(seed,difficulty='normal'){
   s.rngState=rng.state;
   s.intel=s.empires.map(()=>({stars:stars.map(()=>false),planets:s.planets.map(()=>null)}));
   updateIntel(s);
-  s.events=[{msg:`${stars[h0].name} awaits orders. Split your colony ship off the home fleet, or tap ${stars[h0].name} twice to see its planets.`,kind:'colony',star:h0}];
+  s.events=[{msg:`${stars[h0].name} awaits orders. Tap ${stars[h0].name} twice to see its planets, then pick one for your colony ship with Colonise.`,kind:'colony',star:h0}];
   return s;
 }
 
@@ -164,7 +164,7 @@ const clone=s=>({...s,stars:s.stars.map(x=>({...x})),planets:s.planets.map(x=>({
 
 // Applies one empire's orders, in the order given, to a (cloned) state.
 // Orders: research{tech} · move{fleet,to,target?} · split{fleet,ships:{type:n},to,target?} · target{fleet,planet} · merge{star} · build{star,kind}
-// A target is a planet: colony ships settle it, fighters besiege it. Builds run last, so new ships cannot move until next turn.
+// A target is a planet: colony ships settle it (only when ordered), fighters besiege it. Builds run last, so new ships cannot move until next turn.
 function applyOrders(s,e,orders,say,withBuilds){
   const emp=s.empires[e];if(!emp.alive)return;
   const mineF=id=>s.fleets.find(f=>f.id===id&&f.owner===e);
@@ -212,12 +212,11 @@ function applyOrders(s,e,orders,say,withBuilds){
 // What the state looks like once an empire's movement and research orders are applied (no builds, no turn).
 function previewOrders(state,e,orders){const s=clone(state);s.events=state.events;applyOrders(s,e,orders,()=>{},false);return s;}
 
-// The planet a parked fleet with a colony ship will settle this turn, or null.
+// The planet a parked fleet with a colony ship will settle this turn, or null. Settling is never automatic: it needs a target.
 function settleChoice(s,f){
   if(f.dest!=null||!has(f,'colony'))return null;
   if(s.fleets.some(g=>g.at===f.at&&g.owner!==f.owner&&has(g,'fighter')))return null;
-  const free=planetsAt(s,f.at).filter(p=>p.owner<0&&p.cap>0);
-  return free.find(p=>p.id===f.target)||free.sort((a,b)=>b.cap-a.cap||a.id-b.id)[0]||null;
+  return planetsAt(s,f.at).find(p=>p.id===f.target&&p.owner<0&&p.cap>0)||null;
 }
 
 function resolveTurn(state,ordersBy,rng){
@@ -281,7 +280,7 @@ function resolveTurn(state,ordersBy,rng){
     }
   }
   s.fleets=s.fleets.filter(f=>f.ships.length);
-  // 4. Colonisation: a parked fleet carrying a colony ship settles its target planet, else the most habitable free one
+  // 4. Colonisation: a parked fleet carrying a colony ship settles the free planet it was ordered to
   for(const f of s.fleets.slice()){
     const p=settleChoice(s,f);if(!p)continue;
     f.ships.splice(f.ships.findIndex(x=>x.type==='colony'),1);

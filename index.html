@@ -202,7 +202,7 @@ button{font:inherit;color:inherit;cursor:pointer}
       <li>Ships travel in fleets along hyperlanes, one jump per turn. A fleet of only scouts makes two. Unknown stars are charted when a fleet comes within one jump.</li>
       <li>Tap a star, then <b>Send…</b> on a fleet. Choose how many of each ship to send, then tap the destination. The rest stay behind as their own fleet. <b>Merge</b> joins fleets parked at the same star. Orders run when you end the turn.</li>
       <li>Stars have up to five planets. Star colour hints at what you will find: yellow and orange stars have the best worlds, blue-white and red stars mostly barren ones and gas giants. Tap a star twice, or <b>Enter system</b>, to see its planets.</li>
-      <li>Colony ships settle the planet you choose with <b>Colonise</b>, or else the most habitable free planet when their fleet arrives. Colonies grow, and each person yields 1 industry per turn.</li>
+      <li>Colony ships only settle when you choose a planet for them: tap a free planet and press <b>Colonise</b>. Until then they wait in orbit. Colonies grow, and each person yields 1 industry per turn.</li>
       <li>Spend industry on ships and research. Fighters attack anything hostile. Fighters in a system besiege one undefended enemy planet a turn: the one you pick with <b>Attack</b>, or else the weakest. Planets shoot back.</li>
       <li>Touch: drag to pan, pinch to zoom, drag with two fingers to rotate. Mouse: drag to pan, scroll to zoom, right-drag or Shift-drag to rotate. Esc cancels a send or leaves a system.</li>
     </ul>
@@ -549,9 +549,11 @@ function fleetCard(f,adj){
   let note='Parked';
   if(f.dest!=null){const p=route(adj,f.at,f.dest),turns=Math.ceil(p.length/fleetSpeed(view,f));
     note=`Bound for ${esc(view.stars[f.dest].name)} · ${turns} ${turns===1?'turn':'turns'}`;}
-  const tp=f.target!=null?view.planets[f.target]:null;
-  if(tp)note+=` · target ${esc(tp.name)}`;
-  else{const sp=settleChoice(view,f);if(sp)note=`Settles ${esc(sp.name)} at end of turn`;}
+  const tp=f.target!=null?view.planets[f.target]:null,sp=settleChoice(view,f);
+  if(sp)note=`Settles ${esc(sp.name)} at end of turn`;
+  else if(tp)note+=` · target ${esc(tp.name)}`;
+  else if(f.dest==null&&has(f,'colony')&&planetsAt(pv,f.at).some(p=>p.owner<0&&p.cap>0))
+    note=`Colony ship awaiting orders · ${mode==='system'?'tap a planet, then Colonise':'enter the system to choose a planet'}`;
   let h=`<div class="fleet"><div class="row"><div class="what"><b>Fleet ${f.id}</b><span>${describe(f)}</span><span class="state">${note}</span></div>
     ${f.dest!=null?`<button class="btn small" data-act="hold" data-fleet="${f.id}">Hold</button>`:''}
     ${picking&&picking.fleet===f.id?'':`<button class="btn small" data-act="send" data-fleet="${f.id}">Send…</button>`}</div>`;

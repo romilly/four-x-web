@@ -89,10 +89,20 @@ test('a colony ship settles its target planet', () => {
   assert.equal(r.planets.find(p => p.id === 2).owner, -1);
 });
 
-test('without a target a colony ship settles the most habitable free planet', () => {
+test('without a target a colony ship waits instead of settling', () => {
   const { s } = arena();
   const r = g.resolveTurn(s, { 0: [] }, g.makeRng(1)).state;
-  assert.equal(r.planets.find(p => p.id === 2).owner, 0);
+  assert.ok(r.planets.filter(p => p.star === s.planets[0].star).every(p => p.id === 0 || p.owner === -1));
+  assert.ok(r.fleets.some(f => f.owner === 0 && g.has(f, 'colony')), 'the colony ship is still in orbit');
+});
+
+test('a newly built colony ship does not settle on its own', () => {
+  const { s, st } = arena();
+  s.fleets = s.fleets.filter(f => f.owner !== 0);
+  s.empires[0].credits = 100;
+  let r = g.resolveTurn(s, { 0: [{ t: 'build', star: st, kind: 'colony' }] }, g.makeRng(1)).state;
+  r = g.resolveTurn(r, { 0: [] }, g.makeRng(2)).state;
+  assert.equal(r.planets.filter(p => p.owner === 0).length, 1);
 });
 
 test('fighters besiege their target planet, otherwise the weakest', () => {
@@ -151,7 +161,9 @@ test('self-play runs to completion and empires spread over many planets', () => 
 
 test('difficulty levels rank in order for a scripted stand-in', () => {
   // Planet games rarely finish inside 120 turns, so compare how much of the galaxy the stand-in holds.
-  const held = d => seeds.reduce((n, seed) => n + selfPlay(seed, d, 120).planets.filter(p => p.owner === 0).length, 0);
+  // 24 galaxies: with fewer, Normal and Hard can tie by chance.
+  const many = Array.from({ length: 24 }, (_, i) => 1000 + i * 37);
+  const held = d => many.reduce((n, seed) => n + selfPlay(seed, d, 120).planets.filter(p => p.owner === 0).length, 0);
   const easy = held('easy'), normal = held('normal'), hard = held('hard');
   assert.ok(easy > normal && normal > hard, `easy ${easy}, normal ${normal}, hard ${hard}`);
 });
