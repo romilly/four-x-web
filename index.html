@@ -159,6 +159,38 @@ button{font:inherit;color:inherit;cursor:pointer}
 .ball{flex:none;width:16px;height:16px;border-radius:50%;box-shadow:inset -4px -3px 0 rgba(0,0,0,.35)}
 .pcard{padding:10px 12px;border:1px solid var(--rule);border-radius:8px;background:rgba(6,9,19,.35)}
 .pcard h3{color:var(--gold)}
+.card.help{max-width:560px;padding:16px 18px}
+.helphead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.tabs{display:flex;gap:2px;overflow-x:auto;margin:12px 0 4px;border-bottom:1px solid var(--rule);scrollbar-width:none}
+.tabs button{flex:none;background:transparent;border:0;border-bottom:2px solid transparent;color:var(--dim);padding:8px 10px;font:600 13px var(--f-body)}
+.tabs button[aria-selected="true"]{color:var(--gold);border-bottom-color:var(--gold)}
+.tabp ul{padding-left:18px;margin:12px 0;display:flex;flex-direction:column;gap:8px;font-size:14px;max-width:62ch}
+.tabp>.newg:first-child{margin-top:8px;border-top:0;padding-top:4px}
+.ref{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
+.ref th{text-align:left;font:500 10px var(--f-data);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);padding:4px 8px 4px 0;border-bottom:1px solid var(--rule)}
+.ref td{padding:6px 8px 6px 0;border-bottom:1px solid rgba(38,48,77,.6);vertical-align:top}
+.ref td:first-child{white-space:nowrap;font-weight:600}
+.sw{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px;vertical-align:0}
+.tutcall{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px;padding:10px 12px;border:1px solid var(--gold);border-radius:8px;background:rgba(242,181,68,.06)}
+.tutcall p{margin:0;flex:1 1 220px;font-size:14px}
+.info{display:inline-grid;place-items:center;width:20px;height:20px;margin-left:6px;border-radius:50%;border:1px solid var(--rule);background:transparent;color:var(--dim);font:600 11px var(--f-data);padding:0;vertical-align:1px;letter-spacing:0}
+.info:hover{color:var(--gold);border-color:var(--gold)}
+.sec h3 .info{margin-top:-3px}
+.hint{margin:6px 0 0;padding:6px 10px;border-left:2px solid var(--teal);color:var(--ink);font-size:12.5px;background:rgba(79,209,197,.06);max-width:62ch}
+#coach{position:fixed;z-index:7;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 58px);display:flex;justify-content:center;pointer-events:none;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+#coach .in{pointer-events:auto;width:100%;max-width:520px;background:var(--hull);border:1px solid var(--gold);border-radius:10px;padding:10px 12px;
+  box-shadow:0 8px 30px rgba(0,0,0,.45);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.cstep{font:500 10px var(--f-data);letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+#coachText{margin:4px 0 8px;font-size:14px}
+.cacts{display:flex;justify-content:flex-end;gap:6px}
+body.coaching #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80px)}
+/* While choosing a destination the orders panel shrinks to its header, leaving the map free to tap */
+body.targeting #sheetBody{display:none}
+body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80px)}
+@media (min-width:760px){body.targeting #banner,body.coaching #banner{bottom:calc(env(safe-area-inset-bottom,0px) + 24px)}}
+.coach-target{box-shadow:0 0 0 2px var(--gold),0 0 14px 3px rgba(242,181,68,.55)!important;animation:coachPulse 1.4s ease-in-out infinite}
+@keyframes coachPulse{50%{box-shadow:0 0 0 2px var(--gold),0 0 4px 1px rgba(242,181,68,.25)}}
 .fail{position:fixed;inset:0;display:grid;place-items:center;text-align:center;color:var(--dim)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -177,6 +209,12 @@ button{font:inherit;color:inherit;cursor:pointer}
 </header>
 
 <div id="banner" hidden><div class="in"><span id="bannerText"></span><button class="btn small" id="cancelTarget">Cancel</button></div></div>
+
+<div id="coach" hidden><div class="in">
+  <div class="cstep" id="coachStep"></div>
+  <p id="coachText"></p>
+  <div class="cacts"><button class="btn small" id="coachSkip">Leave tutorial</button><button class="btn small primary" id="coachNext" hidden>Next</button></div>
+</div></div>
 
 <section id="sheet" aria-live="polite">
   <div class="head">
@@ -197,19 +235,92 @@ button{font:inherit;color:inherit;cursor:pointer}
 </div>
 
 <div class="modal" id="helpModal" hidden>
-  <div class="card" role="dialog" aria-labelledby="helpH">
-    <h2 id="helpH">Gabriel's Reach</h2>
-    <div class="kicker" id="seedLine"></div>
-    <ul>
-      <li>You lead the <b style="color:var(--gold)">Aurum Concord</b>. Two rivals share this cluster. Be the last empire standing.</li>
-      <li>Ships travel in fleets along hyperlanes, one jump per turn. A fleet of only scouts makes two. Unknown stars are charted when a fleet comes within one jump.</li>
-      <li>Tap a star, then <b>Send…</b> on a fleet. Choose how many of each ship to send, then tap the destination. The rest stay behind as their own fleet. <b>Merge</b> joins fleets parked at the same star. Orders run when you end the turn.</li>
-      <li>Stars have up to five planets. Star colour hints at what you will find: yellow and orange stars have the best worlds, blue-white and red stars mostly barren ones and gas giants. Tap a star twice, or <b>Enter system</b>, to see its planets.</li>
-      <li>Colony ships only settle when you choose a planet for them: tap a free planet and press <b>Colonise</b>. Until then they wait in orbit. Colonies grow, and each person yields 1 industry per turn.</li>
-      <li>Spend industry on ships and research. Fighters attack anything hostile. Fighters in a system besiege one undefended enemy planet a turn: the one you pick with <b>Attack</b>, or else the weakest. Planets shoot back.</li>
-      <li>Touch: drag to pan, pinch to zoom, drag with two fingers to rotate. Mouse: drag to pan, scroll to zoom, right-drag or Shift-drag to rotate. Esc cancels a send or leaves a system.</li>
-    </ul>
-    <div class="newg" id="saves">
+  <div class="card help" role="dialog" aria-labelledby="helpH">
+    <div class="helphead">
+      <div><h2 id="helpH">Gabriel's Reach</h2><div class="kicker" id="seedLine"></div></div>
+      <button class="btn small" data-close="helpModal">Close</button>
+    </div>
+    <div class="tabs" role="tablist">
+      <button role="tab" data-tab="basics">Basics</button><button role="tab" data-tab="fleets">Fleets</button><button role="tab" data-tab="planets">Planets</button><button role="tab" data-tab="combat">Combat</button><button role="tab" data-tab="research">Research</button><button role="tab" data-tab="controls">Controls</button><button role="tab" data-tab="game">Game</button>
+    </div>
+    <div class="tabp" data-panel="basics">
+      <div class="tutcall" id="tutCall">
+        <p><b>New here?</b> The tutorial plays the first turns with you, one step at a time, in a gentle galaxy.</p>
+        <button class="btn primary" data-tut="start">Play the tutorial</button>
+      </div>
+      <ul>
+        <li>You lead the <b style="color:var(--gold)">Aurum Concord</b>. Two rivals, the <b style="color:var(--teal)">Veth Hegemony</b> and the <b style="color:var(--rose)">Ossari Choir</b>, share this cluster. An empire falls when it has no planets and no colony ships. Be the last one standing.</li>
+        <li>Each turn, give your orders, then press <b>End turn</b>. Everything happens at once: your orders, the rivals' orders, battles, sieges, growth.</li>
+        <li><b>Industry (IU)</b> pays for everything. You earn 2 IU a turn plus 1 for every person on your planets. Unspent IU carries over.</li>
+        <li><b>Fog of war:</b> you see one jump around your planets and fleets. Elsewhere the map shows what you last saw, which may be out of date.</li>
+        <li>Your game saves itself in this browser after every move. The Game tab saves it to a file.</li>
+      </ul>
+    </div>
+    <div class="tabp" data-panel="fleets" hidden>
+      <table class="ref"><thead><tr><th>Ship</th><th>Cost</th><th>Job</th></tr></thead><tbody>
+        <tr><td>Fighter</td><td>15 IU</td><td>Fights, besieges enemy planets, guards yours</td></tr>
+        <tr><td>Colony ship</td><td>25 IU</td><td>Settles one planet, then it is used up</td></tr>
+        <tr><td>Scout</td><td>8 IU</td><td>Cheap explorer, faster when travelling alone</td></tr>
+      </tbody></table>
+      <ul>
+        <li>Ships travel in <b>fleets</b> along the hyperlanes, one jump a turn, or two for a fleet of only scouts. Each Hyperdrives level adds one. A fleet moves at the pace of its slowest ship.</li>
+        <li><b>Send…</b> on a fleet: choose how many of each ship, press <b>Choose destination</b>, tap a star. The ships you chose split off as a new fleet; the rest stay.</li>
+        <li><b>Merge</b> joins fleets parked at the same star. <b>Hold</b> cancels a move. <b>Undo</b> removes your last order.</li>
+        <li>Build ships in the <b>Shipyard</b> of any star where you hold a planet. New ships join a parked fleet there at the end of the turn and can move the turn after.</li>
+      </ul>
+    </div>
+    <div class="tabp" data-panel="planets" hidden>
+      <ul>
+        <li>Each star has up to five planets. Tap a star twice, or press <b>Enter system</b>, to see them. <b>‹ Galaxy</b> or Esc goes back.</li>
+        <li>Star colour hints at what you will find:</li>
+      </ul>
+      <table class="ref"><tbody>
+        <tr><td><span class="sw" style="background:#ffe2b0"></span>Yellow</td><td>Rich: terran and ocean worlds</td></tr>
+        <tr><td><span class="sw" style="background:#ffb47a"></span>Orange</td><td>Good: many habitable planets</td></tr>
+        <tr><td><span class="sw" style="background:#f4f1ff"></span>White</td><td>Mixed</td></tr>
+        <tr><td><span class="sw" style="background:#9db4ff"></span>Blue-white</td><td>Poor: barren, toxic, gas giants</td></tr>
+        <tr><td><span class="sw" style="background:#ff8a6a"></span>Red</td><td>Poor: cold and small</td></tr>
+      </tbody></table>
+      <ul>
+        <li><b>Habitability</b> is the most people a planet can hold. 0 means nobody can live there. Terraforming raises it.</li>
+        <li><b>To colonise</b>, get a fleet with a colony ship into the system or on its way there, tap a free planet and press <b>Colonise</b>. Colony ships never settle on their own.</li>
+        <li>Colonies grow by 1 person every other turn up to their habitability. Each person earns 1 IU a turn.</li>
+        <li>On the map, each star shows a dot per planet: an empire's colour if owned, <b>white</b> if free and habitable, dim if nobody can live there.</li>
+        <li>Rivals can hold planets in the same system as you.</li>
+      </ul>
+    </div>
+    <div class="tabp" data-panel="combat" hidden>
+      <ul>
+        <li><b>Battles</b> happen when ships end a turn at a star where another empire has ships or inhabited planets. Fleets passing through a star do not stop to fight.</li>
+        <li>Each fighter fires once a round, for up to 6 rounds. Each inhabited planet fires 1 shot plus 1 for every 3 people, in the first round only. Scouts and colony ships never shoot.</li>
+        <li>A shot hits 40% of the time, plus 10% for each Weapons level. Fighters are shot first; colony ships and scouts only once their fighters are gone.</li>
+        <li><b>Sieges:</b> after the battle, if a rival has no fighters left in the system, your fighters remove ½ person per fighter (rounded up) from one of its planets each turn. At 0 the planet is yours, with 1 person.</li>
+        <li>Choose which planet with <b>Attack</b>: enter the system, tap the enemy planet, press Attack on a fleet that is there or on its way. Without a choice, fighters hit the weakest planet.</li>
+        <li><b>Rule of thumb:</b> bring at least as many fighters as the planet has people, and it falls in about two turns. Leave a fighter behind to guard what you take; any fighter of yours in a system protects all your planets there.</li>
+      </ul>
+    </div>
+    <div class="tabp" data-panel="research" hidden>
+      <table class="ref"><thead><tr><th>Field</th><th>Levels</th><th>Each level</th></tr></thead><tbody>
+        <tr><td>Weapons</td><td>4</td><td>+10% hit chance for fighters and planets</td></tr>
+        <tr><td>Hyperdrives</td><td>2</td><td>+1 jump a turn for every fleet</td></tr>
+        <tr><td>Terraforming</td><td>3</td><td>+1 habitability on every planet you hold</td></tr>
+      </tbody></table>
+      <ul>
+        <li>A level costs 40 IU plus 40 for each level you already have in that field, and arrives at the end of the turn.</li>
+        <li>Weapons before a big war. Terraforming once you hold several colonies. Hyperdrives when your empire is spread out.</li>
+      </ul>
+    </div>
+    <div class="tabp" data-panel="controls" hidden>
+      <ul>
+        <li><b>Touch:</b> drag to pan, pinch to zoom, drag with two fingers to rotate.</li>
+        <li><b>Mouse:</b> drag to pan, scroll to zoom, right-drag or Shift-drag to rotate.</li>
+        <li>Tap a star to select it; tap it again to enter its system. Tap a planet to see it.</li>
+        <li>Tap a line in the turn report to jump to that star.</li>
+        <li><b>Esc</b> cancels a send, closes a panel, or leaves a system.</li>
+      </ul>
+    </div>
+    <div class="tabp" data-panel="game" hidden>
+      <div class="newg" id="saves">
       <h3>Saved games</h3>
       <div class="diffs two">
         <button class="btn" id="saveBtn">Save as YAML</button>
@@ -222,15 +333,18 @@ button{font:inherit;color:inherit;cursor:pointer}
       </div>
       <p class="note" id="saveNote" role="status">Your game also saves itself in this browser after every move.</p>
     </div>
-    <div class="newg">
+      <div class="newg">
       <h3>Start a new galaxy</h3>
       <div class="diffs" data-confirm="1">
         <button class="btn" data-diff="easy">Easy</button><button class="btn" data-diff="normal">Normal</button><button class="btn" data-diff="hard">Hard</button>
       </div>
       <p class="note" id="diffNote">Easy rivals attack late and earn less. Hard rivals see the whole map, strike early and earn more.</p>
     </div>
-    <div class="acts">
-      <button class="btn primary" data-close="helpModal">Play</button>
+      <div class="newg">
+        <h3>Tutorial</h3>
+        <button class="btn" data-tut="start" id="tutRestart">Start the tutorial</button>
+        <p class="note" id="tutNote">Starts a new, gentle galaxy and guides you through the first turns.</p>
+      </div>
     </div>
   </div>
 </div>
@@ -261,13 +375,14 @@ const SPECTRAL=[0x9db4ff,0xf4f1ff,0xffe2b0,0xffb47a,0xff8a6a];
 const PLANET_COLOR={terran:0x5fae7a,ocean:0x3f82d8,arid:0xcf9a5e,tundra:0xc4d6e4,toxic:0xa2be3c,barren:0x8b857b,gas:0xe0ae74};
 const PLANET_SIZE={terran:.85,ocean:.85,arid:.7,tundra:.7,toxic:.75,barren:.55,gas:1.4};
 const css=hex=>'#'+hex.toString(16).padStart(6,'0');
-let game=null,view=null,pv=null,pending=[],sel=null,selPlanet=null,mode='galaxy',picking=null,targeting=null,newArmed=null;
+let tut=null,tutArmed=false,game=null,view=null,pv=null,pending=[],sel=null,selPlanet=null,mode='galaxy',picking=null,targeting=null,newArmed=null;
 let renderer,scene,sysScene,sysLight,camera,controls,dyn,sysGroup,selRing,sysSel,galCam=null;
 let starObjs=[],labelEls=[],sysLabels=[],sysPlanets=[],spinners=[],sysSpinners=[];
 
 // ---------- persistence (per-viewer convenience only) ----------
 const valid=d=>d&&d.game&&Array.isArray(d.game.planets)&&Array.isArray(d.game.intel);
-function save(){try{localStorage.setItem('gr-save-3',JSON.stringify({game,pending}));}catch(e){}}
+function save(){try{localStorage.setItem('gr-save-3',JSON.stringify({game,pending}));localStorage.setItem('gr-tut-1',JSON.stringify(tut));}catch(e){}}
+function loadTut(){try{const t=JSON.parse(localStorage.getItem('gr-tut-1')||'null');return t&&Number.isInteger(t.step)?t:null;}catch(e){return null;}}
 function load(){try{const d=JSON.parse(localStorage.getItem('gr-save-3')||'null');return valid(d)?d:null;}catch(e){return null;}}
 const seenHelp=()=>{try{return localStorage.getItem('gr-help-3')==='1';}catch(e){return false;}};
 const markHelp=()=>{try{localStorage.setItem('gr-help-3','1');}catch(e){}};
@@ -553,11 +668,13 @@ function renderHud(){
   $('iu').textContent=avail();
   $('inc').textContent='+'+incomeOf(view,0);
   $('banner').hidden=!targeting;
+  document.body.classList.toggle('targeting',!!targeting);
   $('undo').hidden=!pending.some(o=>o.t!=='build');
   if(targeting){
     const c=targeting.counts,parts=TYPES.filter(t=>c[t]).map(t=>plural(c[t],t)).join(', ');
     $('bannerText').textContent=`Tap a destination star for ${parts}`;
   }
+  coachUpdate();
 }
 
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
@@ -596,9 +713,10 @@ function planetRow(p){
     <span class="what"><b>${esc(p.name)}</b><span>${PLANET_TYPES[p.type].name} · ${own}</span></span></button>`;
 }
 
+function siegeTurns(n,pop){const per=Math.ceil(n/2);return `${n} ${n===1?'fighter':'fighters'}: about ${Math.ceil(pop/per)} ${Math.ceil(pop/per)===1?'turn':'turns'} to capture`;}
 function planetCard(p){
   const cap=capOf(pv,p);
-  let h=`<div class="sec pcard"><h3>${esc(p.name)}</h3><dl class="facts">
+  let h=`<div class="sec pcard"><h3>${esc(p.name)}${info(p.owner>0?'combat':'planets')}</h3><dl class="facts">
     <div><dt>Type</dt><dd>${PLANET_TYPES[p.type].name}</dd></div>
     <div><dt>Habitability</dt><dd>${p.cap||'None'}</dd></div>
     <div><dt>Population</dt><dd>${p.owner>=0?p.pop+' / '+cap:'—'}</dd></div>
@@ -613,8 +731,9 @@ function planetCard(p){
   }else if(p.owner>0){
     for(const f of mine.filter(f=>has(f,'fighter')))acts.push(f.target===p.id
       ?`<div class="row"><div class="what"><b>Fleet ${f.id} is attacking</b><span>Siege runs each turn its fighters are here</span></div><button class="btn small" data-act="unaim" data-fleet="${f.id}">Clear</button></div>`
-      :`<div class="row"><div class="what"><span>Fleet ${f.id} · ${describe(f)}</span></div><button class="btn small primary" data-act="aim" data-fleet="${f.id}" data-planet="${p.id}">Attack</button></div>`);
-    if(!acts.length)acts.push(`<p class="note">Bring fighters to this system to besiege it. Its batteries fire ${1+Math.floor(p.pop/3)} ${p.pop>=3?'shots':'shot'} a turn.</p>`);
+      :`<div class="row"><div class="what"><span>Fleet ${f.id} · ${describe(f)}</span><span class="state">${siegeTurns(countTypes(f).fighter,p.pop)}</span></div><button class="btn small primary" data-act="aim" data-fleet="${f.id}" data-planet="${p.id}">Attack</button></div>`);
+    const shots=1+Math.floor(p.pop/3);
+    acts.push(`<p class="hint">Its batteries fire ${shots} ${shots===1?'shot':'shots'} a turn. Bring at least ${Math.max(2,p.pop)} fighters to take it in about two turns, and clear any fighters guarding the system first.</p>`);
   }else if(p.owner===0)acts.push(`<p class="note">Your colony. Any of your fighters in this system defend it from siege.</p>`);
   else acts.push(`<p class="note">Nobody can live here.</p>`);
   return h+acts.join('')+`</div>`;
@@ -628,6 +747,9 @@ function renderSheet(){
     $('sheetTitle').textContent=`Turn ${game.turn} report`;
     const mine=pv.planets.filter(p=>p.owner===0).length,fl=view.fleets.filter(f=>f.owner===0).length;
     $('sheetSub').textContent=`${mine} ${mine===1?'colony':'colonies'} · ${fl} ${fl===1?'fleet':'fleets'} · tap a star to give orders`;
+    const idle=view.fleets.find(f=>f.owner===0&&f.dest==null&&f.target==null&&has(f,'colony'));
+    if(idle)h+=`<p class="hint">Fleet ${idle.id} at ${esc(view.stars[idle.at].name)} has a colony ship waiting. ${planetsAt(pv,idle.at).some(p=>p.owner<0&&p.cap>0)?'Enter that system, tap a free planet and press Colonise.':'No free planet there: send it to a star with white planet dots.'}</p>`;
+    if(avail()>=40&&!pending.some(o=>o.t==='research'||o.t==='build'))h+=`<p class="hint">You have ${avail()} IU to spend. Queue research or build ships.</p>`;
   }else{
     $('sheetTitle').textContent=st.name;
     if(st.unknown){
@@ -640,27 +762,30 @@ function renderSheet(){
         ?`<div class="row"><div class="what"><span>${ps.filter(p=>p.owner<0&&p.cap>0).length} free habitable · ${ps.filter(p=>p.owner===0).length} yours</span></div><button class="btn small primary" data-act="enter">Enter system</button></div>`
         :`<div class="row"><div class="what"><span>${vis[st.id]?'In sensor range':'Last known state'} · tap a planet</span></div><button class="btn small" data-act="exit">‹ Galaxy</button></div>`;
       if(mode==='system'&&selPlanet!=null&&planetById(selPlanet))h+=planetCard(planetById(selPlanet));
-      if(ps.length)h+=`<div class="sec"><h3>Planets</h3><div class="plist">${ps.map(planetRow).join('')}</div></div>`;
+      if(ps.length)h+=`<div class="sec"><h3>Planets${info('planets')}</h3><div class="plist">${ps.map(planetRow).join('')}</div></div>`;
     }
     const mine=view.fleets.filter(f=>f.owner===0&&f.at===st.id).sort((a,b)=>a.id-b.id);
     if(mine.length){
       const parked=mine.filter(f=>f.dest==null).length;
-      h+=`<div class="sec"><div class="sech"><h3>Your fleets here</h3>${parked>1?`<button class="btn small" data-act="merge">Merge ${parked} parked fleets</button>`:''}</div>`;
+      h+=`<div class="sec"><div class="sech"><h3>Your fleets here${info('fleets')}</h3>${parked>1?`<button class="btn small" data-act="merge">Merge ${parked} parked fleets</button>`:''}</div>`;
       h+=mine.map(f=>fleetCard(f,adj)).join('')+`</div>`;
     }
     if(vis[st.id]){
       const foes=view.fleets.filter(f=>f.at===st.id&&f.owner!==0);
       if(foes.length){
-        h+=`<div class="sec"><h3>Foreign fleets sighted</h3>`;
+        h+=`<div class="sec"><h3>Foreign fleets sighted${info('combat')}</h3>`;
         for(const f of foes){const e=view.empires[f.owner];
           h+=`<div class="row"><div class="what"><b><span class="dot" style="background:${e.color}"></span>${esc(e.name)}</b><span>${describe(f)}</span></div></div>`;}
         h+=`</div>`;
       }
     }
     if(ownsAt(st.id,0)){
-      h+=`<div class="sec"><h3>Shipyard · ${avail()} IU free</h3><div class="builds">`;
+      h+=`<div class="sec"><h3>Shipyard · ${avail()} IU free${info('fleets')}</h3><div class="builds">`;
       for(const t of TYPES)h+=`<button class="btn" data-act="build" data-type="${t}" ${avail()<COST[t]?'disabled':''}>${SHIP[t][0]}<i>${COST[t]} IU</i></button>`;
       h+=`</div><p class="note" style="margin-top:6px">New ships join a parked fleet here at the end of the turn.</p>`;
+      const freeHere=planetsAt(pv,st.id).filter(p=>p.owner<0&&p.cap>0);
+      if(freeHere.length&&!view.fleets.some(f=>f.owner===0&&has(f,'colony')&&(f.at===st.id||f.dest===st.id)))
+        h+=`<p class="hint">${freeHere.length} free habitable ${freeHere.length===1?'planet':'planets'} in this system. A colony ship (25 IU) can settle one.</p>`;
       const q=pending.map((o,i)=>[o,i]).filter(([o])=>o.t==='build'&&o.star===st.id);
       if(q.length)h+=`<div class="chips">${q.map(([o,i])=>`<span class="chip">${SHIP[o.kind][0]} queued<button data-act="unbuild" data-i="${i}" aria-label="Cancel">×</button></span>`).join('')}</div>`;
       h+=`</div>`;
@@ -672,9 +797,11 @@ function renderSheet(){
   h+=`</div>`;
   if(st&&mode==='galaxy')h+=`<div><button class="btn small" data-act="deselect">Close</button></div>`;
   $('sheetBody').innerHTML=h;
+  coachUpdate();
 }
 
 $('sheetBody').addEventListener('click',e=>{
+  const hb=e.target.closest('[data-help]');if(hb){openHelp(hb.dataset.help);return;}
   const li=e.target.closest('li[data-star]');
   if(li){const i=+li.dataset.star;if(mode==='system')exitSystem();sel=i;picking=null;centerOn(game.stars[i]);refresh();return;}
   const pr=e.target.closest('[data-planet]:not([data-act])');
@@ -728,18 +855,30 @@ function renderTech(){
     return `<div class="tech"><div class="what"><b>${t.name}</b><span class="pips">${pips}</span><span>${t.desc}</span></div>
       ${maxed?'<span class="note">Complete</span>':queued?`<button class="btn small" data-tech="${k}" data-q="1">Queued ×</button>`:
       `<button class="btn small primary" data-tech="${k}" ${avail()<c?'disabled':''}>${c} IU</button>`}</div>`;
-  }).join('');
+  }).join('')+`<p class="note" style="margin-top:10px">Costs and advice ${info('research')}</p>`;
+  coachUpdate();
 }
 $('techList').addEventListener('click',e=>{
+  const hb=e.target.closest('[data-help]');if(hb){$('techModal').hidden=true;openHelp(hb.dataset.help);return;}
   const b=e.target.closest('[data-tech]');if(!b||b.disabled)return;const k=b.dataset.tech;
   if(b.dataset.q)pending=pending.filter(o=>!(o.t==='research'&&o.tech===k));
   else if(avail()>=techCost(game.empires[0].tech[k]))pending.unshift({t:'research',tech:k});
   refresh();renderTech();
 });
-$('techBtn').onclick=()=>{renderTech();$('techModal').hidden=false;};
-$('helpBtn').onclick=()=>openHelp();
+$('techBtn').onclick=()=>{if(tut)tut.sawTech=true;renderTech();$('techModal').hidden=false;coachUpdate();};
+$('helpBtn').onclick=()=>openHelp(tut?'basics':'basics');
 const DIFF_NOTE='Easy rivals attack late and earn less. Hard rivals see the whole map, strike early and earn more.';
-function openHelp(){
+const info=tab=>`<button class="info" data-help="${tab}" aria-label="Help on ${tab}">i</button>`;
+function showTab(tab){
+  document.querySelectorAll('#helpModal [data-tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===tab)));
+  document.querySelectorAll('#helpModal [data-panel]').forEach(p=>p.hidden=p.dataset.panel!==tab);
+}
+document.querySelectorAll('#helpModal [data-tab]').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+function openHelp(tab='basics'){
+  showTab(tab);tutArmed=false;
+  $('tutCall').hidden=!!tut;
+  $('tutRestart').textContent=tut?'Restart the tutorial':'Start the tutorial';
+  $('tutNote').textContent='Starts a new, gentle galaxy and guides you through the first turns.';
   newArmed=null;
   document.querySelectorAll('#helpModal [data-diff]').forEach(b=>b.classList.remove('armed'));
   $('diffNote').textContent=DIFF_NOTE;
@@ -747,7 +886,7 @@ function openHelp(){
   $('seedLine').textContent=`Galaxy ${game.seed} · ${diffOf(game).label} · turn ${game.turn}`;
   $('helpModal').hidden=false;
 }
-document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{$(b.dataset.close).hidden=true;if(b.dataset.close==='helpModal')markHelp();});
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{$(b.dataset.close).hidden=true;if(b.dataset.close==='helpModal')markHelp();coachUpdate();});
 document.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{
   const d=b.dataset.diff,inHelp=!!b.closest('#helpModal');
   if(inHelp&&!game.over&&newArmed!==d){
@@ -794,12 +933,13 @@ $('loadCancel').onclick=()=>{toLoad=null;$('loadConfirm').hidden=true;saveNote('
 $('loadGo').onclick=()=>{
   if(!toLoad)return;
   if(mode==='system')exitSystem();
-  game=toLoad.game;pending=toLoad.orders;toLoad=null;sel=null;targeting=null;picking=null;
+  tut=null;game=toLoad.game;pending=toLoad.orders;toLoad=null;sel=null;targeting=null;picking=null;
   buildStars();centerOn(game.stars[game.empires[0].home],true);refresh();
   $('loadConfirm').hidden=true;$('helpModal').hidden=true;saveNote(`Loaded galaxy ${game.seed} at turn ${game.turn}.`);
 };
 
 function startNew(d){
+  tut=null;
   if(mode==='system')exitSystem();
   game=newGame(Math.floor(Math.random()*900000)+100000,d);pending=[];sel=null;targeting=null;picking=null;
   buildStars();centerOn(game.stars[game.empires[0].home],true);refresh();
@@ -820,15 +960,82 @@ addEventListener('keydown',e=>{
   else if(mode==='system')exitSystem();
 });
 
+// ---------- tutorial ----------
+// A fixed, gentle galaxy and a coach strip. Each step names one action, highlights where to do it,
+// and moves on when the game state shows it was done. It lives entirely in the interface; the rules are untouched.
+const TUTORIAL_SEED=33;
+const homeId=()=>game.empires[0].home;
+const homeName=()=>game.stars[homeId()].name;
+const atHome=()=>sel===homeId();
+const tapHomeFirst=()=>atHome()?'Press':`Tap <b>${esc(homeName())}</b> first, then press`;
+const TUT=[
+  {next:true,text:()=>`Welcome, commander. You rule one planet at <b>${esc(homeName())}</b>, the star with the gold ring. This tutorial walks you through your first turns. Drag to look around, then press Next.`},
+  {text:()=>`Tap your home star, <b>${esc(homeName())}</b>.`,done:()=>atHome()||mode==='system',target:()=>mode==='galaxy'?labelEls[homeId()]:null},
+  {text:()=>`Press <b>Enter system</b> to see the planets around ${esc(homeName())}. Tapping the star again does the same.`,done:()=>mode==='system'&&atHome(),target:()=>'[data-act="enter"]'},
+  {text:()=>{const b=game.planets[tut.best],w=game.planets[tut.poor];return `Your colony ship can settle one planet here, and the choice matters. ${esc(w.name)} has habitability ${w.cap}; ${esc(b.name)} has ${b.cap}. Tap <b>${esc(b.name)}</b>, in the list or in the view.`;},
+   done:()=>selPlanet===tut.best||colonyAimed(),target:()=>`.prow[data-planet="${tut.best}"]`},
+  {text:()=>`Press <b>Colonise</b>. Your colony ship settles ${esc(game.planets[tut.best].name)} when the turn ends.`,done:()=>colonyAimed(),target:()=>'[data-act="aim"]'},
+  {text:()=>`Press <b>End turn</b>. All orders run at once, and the rivals move too.`,done:()=>game.turn>tut.mark,target:()=>'#end'},
+  {next:true,text:()=>`${esc(game.planets[tut.best].name)} is your colony now. It starts with 1 person and grows every other turn. Each person earns 1 industry (IU) a turn; your income shows at the top.`,target:()=>'#inc'},
+  {text:()=>`Press <b>‹ Galaxy</b> to go back to the star map.`,done:()=>mode==='galaxy',target:()=>'[data-act="exit"]'},
+  {text:()=>`Time to explore. ${tapHomeFirst()} <b>Send…</b> on Fleet 1.`,done:()=>picking!=null||targeting!=null||scoutSent(),target:()=>atHome()?'[data-act="send"]':labelEls[homeId()]},
+  {text:()=>`Send only the scout: press <b>−</b> until Fighters shows 0, leaving the scout. Then press <b>Choose destination</b>.`,done:()=>targeting!=null||scoutSent(),
+   target:()=>{const d=[...document.querySelectorAll('[data-act="dec"][data-type="fighter"]:not([disabled])')];return d[0]||'[data-act="target"]';}},
+  {text:()=>`Now tap a star for the scout to fly to. Stars marked <b>?</b> are uncharted: drag the map to find one, or pick any star. A star is charted when one of your fleets comes within one jump of it.`,done:()=>scoutSent()},
+  {text:()=>`Build a fighter. ${tapHomeFirst()} <b>Fighter</b> in the Shipyard. It costs 15 IU and joins a fleet at the end of the turn.`,
+   done:()=>pending.some(o=>o.t==='build'&&o.kind==='fighter'),target:()=>atHome()?'[data-act="build"][data-type="fighter"]':labelEls[homeId()]},
+  {text:()=>`Open <b>Research</b> at the top to see what you can improve. Research costs 40 IU and up, so you will need to save for it.`,done:()=>!!tut.sawTech,target:()=>'#techBtn'},
+  {text:()=>$('techModal').hidden?`Press <b>End turn</b> to launch the fighter and move the scout.`:`Close Research with <b>Done</b>, then press <b>End turn</b>.`,
+   done:()=>game.turn>tut.mark,target:()=>$('techModal').hidden?'#end':'#techModal [data-close]'},
+  {next:true,text:()=>`Later, your scout will find rival planets: teal or rose dots on the map. Gather fighters, send them there, enter the system, tap the enemy planet and press <b>Attack</b>. The <b>?</b> panel explains combat in detail.`,target:()=>'#helpBtn'},
+  {next:true,text:()=>`That's the basics. Keep playing this galaxy, or start a new one from <b>?</b> → Game. Good luck, commander.`}
+];
+const colonyAimed=()=>view.fleets.some(f=>f.owner===0&&f.target===tut.best)||game.planets[tut.best].owner===0;
+const scoutSent=()=>view.fleets.some(f=>f.owner===0&&f.dest!=null&&has(f,'scout'))||game.turn>tut.scoutTurn;
+function startTutorial(){
+  if(mode==='system')exitSystem();
+  game=newGame(TUTORIAL_SEED,'easy');pending=[];sel=null;selPlanet=null;targeting=null;picking=null;
+  const free=planetsAt(game,homeId()).filter(p=>p.owner<0&&p.cap>0).sort((a,b)=>b.cap-a.cap);
+  tut={step:0,mark:game.turn,best:free[0].id,poor:free[free.length-1].id,scoutTurn:Infinity,sawTech:false};
+  document.querySelectorAll('.modal').forEach(m=>m.hidden=true);markHelp();
+  buildStars();centerOn(game.stars[homeId()],true);refresh();
+}
+function endTutorial(){tut=null;save();coachUpdate();}
+function setStep(i){tut.step=i;tut.mark=game.turn;if(i>=10&&tut.scoutTurn===Infinity&&scoutSentNow())tut.scoutTurn=game.turn;}
+const scoutSentNow=()=>view.fleets.some(f=>f.owner===0&&f.dest!=null&&has(f,'scout'));
+function coachUpdate(){
+  document.querySelectorAll('.coach-target').forEach(e=>e.classList.remove('coach-target'));
+  if(!tut||!view){$('coach').hidden=true;document.body.classList.remove('coaching');return;}
+  // remember the turn the scout left, so the step stays done after its move resolves
+  if(scoutSentNow()&&tut.scoutTurn===Infinity)tut.scoutTurn=game.turn;
+  let st=TUT[tut.step];
+  while(st&&!st.next&&st.done()){setStep(tut.step+1);st=TUT[tut.step];}
+  if(!st){endTutorial();return;}
+  $('coach').hidden=false;document.body.classList.add('coaching');
+  $('coachStep').textContent=`Tutorial · step ${tut.step+1} of ${TUT.length}`;
+  $('coachText').innerHTML=st.text();
+  $('coachNext').hidden=!st.next;$('coachNext').textContent=tut.step===TUT.length-1?'Finish':'Next';
+  const t=st.target&&st.target(),el=typeof t==='string'?document.querySelector(t):t;
+  if(el)el.classList.add('coach-target');
+  try{localStorage.setItem('gr-tut-1',JSON.stringify(tut));}catch(e){}
+}
+$('coachNext').onclick=()=>{if(!tut)return;if(tut.step>=TUT.length-1){endTutorial();return;}setStep(tut.step+1);coachUpdate();};
+$('coachSkip').onclick=()=>{endTutorial();};
+document.querySelectorAll('[data-tut="start"]').forEach(b=>b.onclick=()=>{
+  if(!tut&&game.turn>1&&!game.over&&!tutArmed){tutArmed=true;b.textContent='Tap again to abandon this galaxy';return;}
+  startTutorial();
+});
+
 // ---------- boot ----------
 function start(data){
   const saved=valid(data)?data:load();
   if(saved){game=saved.game;pending=saved.pending||[];}else game=newGame(Math.floor(Math.random()*900000)+100000);
+  tut=valid(data)?data.tut||null:loadTut();
   view=previewOrders(game,0,pending);pv=fogView(view,0);
   try{initScene();}catch(err){document.body.insertAdjacentHTML('beforeend','<div class="fail"><p>This device could not start WebGL, which the star chart needs.</p></div>');return;}
   refresh();
   if(!seenHelp())openHelp();
-  window.claude?.hot?.snapshot?.(()=>({game,pending}));
+  window.claude?.hot?.snapshot?.(()=>({game,pending,tut}));
 }
 if(typeof THREE==='undefined'||!THREE.OrbitControls){
   document.body.insertAdjacentHTML('beforeend','<div class="fail"><p>The 3D library did not load. Check your connection and reload.</p></div>');
