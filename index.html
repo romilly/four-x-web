@@ -1,0 +1,631 @@
+<title>Gabriel's Reach</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Michroma&family=IBM+Plex+Sans+Condensed:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a full-bleed star chart; an instrument strip across the top and a chart-table sheet docked below (a floating card on wide screens). */
+:root{
+  color-scheme: dark;
+  --void:#060913;
+  --hull:rgba(11,16,31,.92);
+  --rule:#26304d;
+  --ink:#e4e9f5;
+  --dim:#8b95b3;
+  --gold:#f2b544;
+  --teal:#4fd1c5;
+  --rose:#ef6f8a;
+  --alarm:#ff8a5c;
+  --gold-ink:#1a1204;
+  --f-display:"Michroma","Eurostile","Trebuchet MS",sans-serif;
+  --f-body:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-data:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+html,body{height:100%}
+body{
+  margin:0;background:var(--void);color:var(--ink);
+  font-family:var(--f-body);font-size:15px;line-height:1.4;overflow:hidden;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  -webkit-tap-highlight-color:transparent;
+}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#labels{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.lbl{position:absolute;left:0;top:0;font:500 11px/1.25 var(--f-data);color:var(--ink);white-space:nowrap;text-align:center;
+  text-shadow:0 0 4px var(--void),0 0 2px var(--void);will-change:transform}
+.lbl.unk{color:var(--dim);opacity:.7}
+.lbl .f{display:inline-block;margin:1px 2px 0;padding:0 4px;border-radius:3px;background:rgba(6,9,19,.7);font-variant-numeric:tabular-nums}
+
+#hud{position:fixed;top:0;left:0;right:0;z-index:5;display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;
+  padding-top:calc(env(safe-area-inset-top,0px) + 10px);padding-bottom:14px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  background:linear-gradient(var(--void),rgba(6,9,19,.7) 65%,rgba(6,9,19,0));pointer-events:none}
+#hud>*{pointer-events:auto}
+.brand{font:400 11px/1 var(--f-display);letter-spacing:.2em;color:var(--gold);text-transform:uppercase;margin-right:auto}
+.stat{font:500 13px var(--f-data);font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat small{color:var(--dim);font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-right:5px}
+.stat .up{color:var(--teal);font-size:11px;margin-left:3px}
+@media (max-width:430px){.brand{display:none}#hud{justify-content:space-between}}
+
+button{font:inherit;color:inherit;cursor:pointer}
+.btn{background:transparent;border:1px solid var(--rule);color:var(--ink);border-radius:6px;padding:6px 12px;min-height:36px;
+  font:600 13px var(--f-body);letter-spacing:.03em}
+.btn:hover:not(:disabled){border-color:var(--dim)}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.btn.primary{background:var(--gold);border-color:var(--gold);color:var(--gold-ink)}
+.btn.small{min-height:30px;padding:3px 10px;font-size:12px}
+.btn.icon{width:36px;padding:0}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+#banner{position:fixed;z-index:6;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 62px);display:flex;justify-content:center;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));pointer-events:none}
+#banner .in{pointer-events:auto;display:flex;gap:12px;align-items:center;background:var(--gold);color:var(--gold-ink);
+  border-radius:8px;padding:8px 8px 8px 14px;font-weight:600;max-width:100%}
+#banner .in .btn{border-color:rgba(26,18,4,.4);color:var(--gold-ink)}
+
+#sheet{position:fixed;z-index:4;left:0;right:0;bottom:0;max-height:47%;display:flex;flex-direction:column;
+  background:var(--hull);border-top:1px solid var(--rule);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+@media (min-width:760px){
+  #sheet{left:max(16px,env(safe-area-inset-left,0px));right:auto;bottom:calc(16px + env(safe-area-inset-bottom,0px));
+    width:390px;max-height:72%;border:1px solid var(--rule);border-radius:10px;padding-left:18px;padding-right:18px}
+}
+.head{display:flex;align-items:center;gap:12px;padding-block:12px 10px;border-bottom:1px solid var(--rule)}
+.head .t{min-width:0;flex:1}
+.head h2{margin:0;font:400 14px/1.2 var(--f-display);letter-spacing:.12em;text-transform:uppercase;text-wrap:balance;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.head .sub{color:var(--dim);font-size:12px;margin-top:3px}
+#end{min-width:112px}
+.body{overflow-y:auto;min-height:0;padding-block:6px 14px;display:flex;flex-direction:column;gap:12px}
+.sec h3{margin:6px 0 6px;font:500 10px var(--f-data);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.facts div{min-width:0}
+.facts dt{font:500 9.5px var(--f-data);letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.facts dd{margin:2px 0 0;font:500 14px var(--f-data);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row{display:flex;align-items:center;gap:10px;padding-block:6px;border-top:1px solid rgba(38,48,77,.6)}
+.row:first-of-type{border-top:0}
+.row .what{flex:1;min-width:0}
+.row .what b{font-weight:600}
+.row .what span{display:block;color:var(--dim);font-size:12px}
+.builds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.builds .btn{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:6px 10px;text-align:left}
+.builds .btn i{font:400 11px var(--f-data);font-style:normal;color:var(--dim)}
+.builds .btn.primary i{color:var(--gold-ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px dashed var(--gold);color:var(--gold);border-radius:999px;padding:2px 4px 2px 10px;font-size:12px}
+.chip button{border:0;background:transparent;color:var(--gold);width:24px;height:24px;border-radius:50%}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
+.note{margin:0;color:var(--dim);font-size:13px;max-width:62ch}
+.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.log li{font-size:13px;padding:4px 0 4px 10px;border-left:2px solid var(--rule)}
+.log li[data-star]{cursor:pointer}
+.log li.battle,.log li.capture,.log li.siege,.log li.fall{border-left-color:var(--alarm)}
+.log li.colony{border-left-color:var(--teal)}
+.log li.tech,.log li.build{border-left-color:var(--gold)}
+
+.modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgba(3,5,12,.72);
+  padding-block:calc(env(safe-area-inset-top,0px) + 16px) calc(env(safe-area-inset-bottom,0px) + 16px);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.card{width:100%;max-width:440px;max-height:100%;overflow-y:auto;background:var(--hull);border:1px solid var(--rule);border-radius:12px;padding:20px}
+.card h2{margin:0 0 4px;font:400 18px/1.25 var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);text-wrap:balance}
+.card .kicker{font:500 11px var(--f-data);color:var(--dim);letter-spacing:.08em}
+.card ul{padding-left:18px;margin:14px 0;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.card .acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px}
+.tech{display:flex;gap:12px;align-items:center;padding-block:10px;border-top:1px solid var(--rule)}
+.tech .what{flex:1;min-width:0}
+.tech .what span{display:block;color:var(--dim);font-size:12.5px}
+.pips{display:inline-flex;gap:3px;margin-left:8px;vertical-align:1px}
+.pips i{width:10px;height:4px;background:var(--rule);border-radius:1px}
+.pips i.on{background:var(--gold)}
+.sech{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.fleet{border-top:1px solid rgba(38,48,77,.6)}
+.fleet:first-of-type{border-top:0}
+.fleet .row{border-top:0}
+.row .what span.state{color:var(--gold);opacity:.85}
+.pick{margin:0 0 10px;padding:10px 12px;border:1px solid rgba(242,181,68,.35);background:rgba(242,181,68,.05);border-radius:8px;display:flex;flex-direction:column;gap:8px}
+.pickh{font:500 10px var(--f-data);letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.step{display:flex;align-items:center;gap:10px}
+.step .lab{flex:1;min-width:0}
+.step .n{font:500 14px var(--f-data);font-variant-numeric:tabular-nums;min-width:5ch;text-align:center}
+.pacts{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.btn.icon.small{width:34px;min-height:34px;font-size:16px}
+#undo{min-height:36px}
+.newg{margin-top:16px;padding-top:12px;border-top:1px solid var(--rule)}
+.newg h3{margin:0 0 8px;font:500 10px var(--f-data);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.diffs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.diffs .btn.armed{background:var(--alarm);border-color:var(--alarm);color:var(--gold-ink)}
+#diffNote{margin-top:8px;font-size:12.5px}
+.fail{position:fixed;inset:0;display:grid;place-items:center;text-align:center;color:var(--dim)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<canvas id="gl" aria-label="Galaxy star chart"></canvas>
+<div id="labels"></div>
+
+<header id="hud">
+  <div class="brand">Gabriel's Reach</div>
+  <div class="stat"><small>Turn</small><span id="turn">1</span></div>
+  <div class="stat" title="Industry units available after queued orders"><small>Industry</small><span id="iu">0</span><span class="up" id="inc">+0</span></div>
+  <button class="btn" id="techBtn">Research</button>
+  <button class="btn icon" id="helpBtn" aria-label="How to play">?</button>
+</header>
+
+<div id="banner" hidden><div class="in"><span id="bannerText"></span><button class="btn small" id="cancelTarget">Cancel</button></div></div>
+
+<section id="sheet" aria-live="polite">
+  <div class="head">
+    <div class="t"><h2 id="sheetTitle">Turn report</h2><div class="sub" id="sheetSub"></div></div>
+    <button class="btn small" id="undo" hidden>Undo</button>
+    <button class="btn primary" id="end">End turn</button>
+  </div>
+  <div class="body" id="sheetBody"></div>
+</section>
+
+<div class="modal" id="techModal" hidden>
+  <div class="card" role="dialog" aria-labelledby="techH">
+    <h2 id="techH">Research</h2>
+    <div class="kicker" id="techKicker"></div>
+    <div id="techList" style="margin-top:12px"></div>
+    <div class="acts"><button class="btn" data-close="techModal">Done</button></div>
+  </div>
+</div>
+
+<div class="modal" id="helpModal" hidden>
+  <div class="card" role="dialog" aria-labelledby="helpH">
+    <h2 id="helpH">Gabriel's Reach</h2>
+    <div class="kicker" id="seedLine"></div>
+    <ul>
+      <li>You lead the <b style="color:var(--gold)">Aurum Concord</b>. Two rivals share this cluster. Be the last empire standing.</li>
+      <li>Ships travel in fleets along hyperlanes, one jump per turn. A fleet of only scouts makes two. Unknown stars are charted when a fleet comes within one jump.</li>
+      <li>Tap a star, then <b>Send…</b> on a fleet. Choose how many of each ship to send, then tap the destination. The rest stay behind as their own fleet. <b>Merge</b> joins fleets parked at the same star. Orders run when you end the turn.</li>
+      <li>Colony ships settle unclaimed stars with habitability above zero. Colonies grow, and each person yields 1 industry per turn.</li>
+      <li>Spend industry on ships and research. Fighters attack anything hostile. Fighters parked at an undefended colony besiege it until it falls, while the colony shoots back. A colony ship travelling with fighters settles as soon as its fleet arrives.</li>
+      <li>Touch: drag to pan, pinch to zoom, drag with two fingers to rotate. Mouse: drag to pan, scroll to zoom, right-drag or Shift-drag to rotate. Esc cancels a send.</li>
+    </ul>
+    <div class="newg">
+      <h3>Start a new galaxy</h3>
+      <div class="diffs" data-confirm="1">
+        <button class="btn" data-diff="easy">Easy</button><button class="btn" data-diff="normal">Normal</button><button class="btn" data-diff="hard">Hard</button>
+      </div>
+      <p class="note" id="diffNote">Easy rivals attack late and earn less. Hard rivals see the whole map, strike early and earn more.</p>
+    </div>
+    <div class="acts">
+      <button class="btn primary" data-close="helpModal">Play</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="overModal" hidden>
+  <div class="card" role="dialog" aria-labelledby="overH">
+    <h2 id="overH"></h2>
+    <p class="note" id="overText" style="margin-top:10px"></p>
+    <div class="acts">
+      <button class="btn" data-close="overModal">View the map</button>
+    </div>
+    <div class="newg">
+      <h3>Play again</h3>
+      <div class="diffs"><button class="btn" data-diff="easy">Easy</button><button class="btn primary" data-diff="normal">Normal</button><button class="btn" data-diff="hard">Hard</button></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="core.js"></script>
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id);
+const SPECTRAL=[0x9db4ff,0xf4f1ff,0xffe2b0,0xffb47a,0xff8a6a];
+let game=null,view=null,pending=[],sel=null,picking=null,targeting=null,newArmed=false;
+let renderer,scene,camera,controls,dyn,starObjs=[],labelEls=[],spinners=[],selRing=null;
+
+// ---------- persistence (per-viewer convenience only) ----------
+const valid=d=>d&&d.game&&Array.isArray(d.game.fleets)&&Array.isArray(d.game.intel);
+function save(){try{localStorage.setItem('gr-save-2',JSON.stringify({game,pending}));}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem('gr-save-2')||'null');return valid(d)?d:null;}catch(e){return null;}}
+const seenHelp=()=>{try{return localStorage.getItem('gr-help-2')==='1';}catch(e){return false;}};
+const markHelp=()=>{try{localStorage.setItem('gr-help-2','1');}catch(e){}};
+
+// ---------- order helpers ----------
+// The interface renders from a preview: the real state with the player's queued orders applied.
+const buildSpend=()=>pending.reduce((a,o)=>a+(o.t==='build'?COST[o.kind]:0),0);
+const avail=()=>view.empires[0].credits-buildSpend();
+const plural=(n,t)=>`${n} ${SHIP[t][n===1?0:1].toLowerCase()}`;
+const describe=f=>{const c=countTypes(f);return TYPES.filter(t=>c[t]).map(t=>plural(c[t],t)).join(' · ');};
+const fleetById=id=>view.fleets.find(f=>f.id===id);
+function queue(o){pending.push(o);}
+
+// ---------- scene ----------
+function glowTexture(){
+  const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');
+  const r=g.createRadialGradient(64,64,0,64,64,64);
+  r.addColorStop(0,'rgba(255,255,255,1)');r.addColorStop(.18,'rgba(255,255,255,.55)');r.addColorStop(.5,'rgba(255,255,255,.12)');r.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle=r;g.fillRect(0,0,128,128);return new THREE.CanvasTexture(c);
+}
+const P=st=>new THREE.Vector3(st.x,0,st.y);
+
+function initScene(){
+  const canvas=$('gl');
+  renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  renderer.setSize(innerWidth,innerHeight,false);
+  scene=new THREE.Scene();scene.background=new THREE.Color(0x060913);
+  camera=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,2000);
+  controls=new THREE.OrbitControls(camera,canvas);
+  controls.enableDamping=true;controls.dampingFactor=0.12;controls.screenSpacePanning=false;
+  controls.minDistance=22;controls.maxDistance=170;controls.maxPolarAngle=1.3;
+  controls.mouseButtons={LEFT:THREE.MOUSE.PAN,MIDDLE:THREE.MOUSE.DOLLY,RIGHT:THREE.MOUSE.ROTATE};
+  controls.touches={ONE:THREE.TOUCH.PAN,TWO:THREE.TOUCH.DOLLY_ROTATE};
+  const n=2400,pos=new Float32Array(n*3),rng=makeRng(7);
+  for(let i=0;i<n;i++){const u=rng.next()*2-1,t=rng.next()*Math.PI*2,r=500+rng.next()*400,q=Math.sqrt(1-u*u);
+    pos[i*3]=r*q*Math.cos(t);pos[i*3+1]=r*u;pos[i*3+2]=r*q*Math.sin(t);}
+  const bg=new THREE.BufferGeometry();bg.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  scene.add(new THREE.Points(bg,new THREE.PointsMaterial({color:0x7d88aa,size:1.4,sizeAttenuation:false})));
+  for(const r of [15,30,45]){
+    const g=new THREE.RingGeometry(r-0.06,r+0.06,128);g.rotateX(-Math.PI/2);
+    scene.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x1b2440,transparent:true,opacity:.5,depthWrite:false})));
+  }
+  buildStars();
+  dyn=new THREE.Group();scene.add(dyn);
+  const g=new THREE.RingGeometry(2.3,2.6,48);g.rotateX(-Math.PI/2);
+  selRing=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.85,depthWrite:false}));
+  selRing.visible=false;scene.add(selRing);
+  centerOn(game.stars[game.empires[0].home],true);
+  addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
+  bindPointer(canvas);
+  requestAnimationFrame(loop);
+}
+
+function buildStars(){
+  for(const o of starObjs)scene.remove(o.group);
+  starObjs=[];$('labels').textContent='';labelEls=[];
+  const tex=glowTexture(),sphere=new THREE.SphereGeometry(1,20,14);
+  for(const st of game.stars){
+    const group=new THREE.Group();group.position.copy(P(st));
+    const mat=new THREE.MeshBasicMaterial({color:SPECTRAL[st.kind]});
+    const core=new THREE.Mesh(sphere,mat);
+    const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,color:SPECTRAL[st.kind],transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
+    group.add(core,glow);scene.add(group);
+    starObjs.push({group,core,glow,mat});
+    const el=document.createElement('div');el.className='lbl';$('labels').appendChild(el);labelEls.push(el);
+  }
+}
+
+function centerOn(st,instant){
+  const t=P(st),off=instant?new THREE.Vector3(0,58,46):camera.position.clone().sub(controls.target);
+  controls.target.copy(t);camera.position.copy(t.clone().add(off));controls.update();
+}
+function disposeGroup(g){
+  g.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});
+  while(g.children.length)g.remove(g.children[0]);
+}
+
+function refreshScene(){
+  disposeGroup(dyn);spinners=[];
+  const vis=vision(view,0),ex=view.explored;
+  view.stars.forEach((st,i)=>{
+    const o=starObjs[i],known=ex[i];
+    o.core.scale.setScalar(0.62+(st.kind===0?0.35:st.kind===1?0.2:0)+(known?0:-0.2));
+    o.mat.color.setHex(known?SPECTRAL[st.kind]:0x3a4566);
+    o.glow.material.color.setHex(known?SPECTRAL[st.kind]:0x2a3350);
+    o.glow.material.opacity=known?(vis[i]?0.95:0.6):0.4;
+    o.glow.scale.setScalar(known?7:4.5);
+  });
+  const near=[],far=[];
+  for(const[a,b]of view.lanes){const A=view.stars[a],B=view.stars[b];(ex[a]&&ex[b]?near:far).push(A.x,0,A.y,B.x,0,B.y);}
+  const lane=(arr,color,op)=>{const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(arr,3));
+    dyn.add(new THREE.LineSegments(g,new THREE.LineBasicMaterial({color,transparent:true,opacity:op,depthWrite:false})));};
+  lane(near,0x5a6a9a,0.75);lane(far,0x2a3352,0.55);
+  for(const st of view.stars){
+    if(st.owner<0||!ex[st.id])continue;
+    const col=new THREE.Color(view.empires[st.owner].color);
+    const disc=new THREE.CircleGeometry(5.2,48);disc.rotateX(-Math.PI/2);
+    const dm=new THREE.Mesh(disc,new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.09,depthWrite:false}));
+    dm.position.set(st.x,-0.05,st.y);dyn.add(dm);
+    const cap=Math.max(1,capOf(view,st));
+    const ring=new THREE.RingGeometry(1.55,1.8,48,1,0,Math.PI*2*Math.min(1,st.pop/cap));ring.rotateX(-Math.PI/2);
+    const rm=new THREE.Mesh(ring,new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.95,side:THREE.DoubleSide,depthWrite:false}));
+    rm.position.set(st.x,0.02,st.y);dyn.add(rm);
+    const track=new THREE.RingGeometry(1.55,1.8,48);track.rotateX(-Math.PI/2);
+    const tm=new THREE.Mesh(track,new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.22,depthWrite:false}));
+    tm.position.set(st.x,0.01,st.y);dyn.add(tm);
+  }
+  // one marker per fleet, circling its star
+  const oct=new THREE.OctahedronGeometry(0.55,0);
+  for(const st of view.stars){
+    const fl=view.fleets.filter(f=>f.at===st.id&&(f.owner===0||vis[st.id])).slice(0,6);
+    fl.forEach((f,k)=>{
+      const m=new THREE.Mesh(oct.clone(),new THREE.MeshBasicMaterial({color:new THREE.Color(view.empires[f.owner].color)}));
+      m.userData={cx:st.x,cz:st.y,phase:k*(Math.PI*2/fl.length)+st.id};
+      m.position.set(st.x+2.8,1.2,st.y);dyn.add(m);spinners.push(m);
+    });
+  }
+  oct.dispose();
+  // routes of your moving fleets
+  const adj=adjOf(view),seen=new Set();
+  for(const f of view.fleets){
+    if(f.owner!==0||f.dest==null)continue;
+    const key=f.at+'>'+f.dest;if(seen.has(key))continue;seen.add(key);
+    const p=route(adj,f.at,f.dest);if(!p)continue;
+    const pts=[f.at,...p].map(i=>new THREE.Vector3(view.stars[i].x,0.3,view.stars[i].y));
+    const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineDashedMaterial({color:0xf2b544,dashSize:1.1,gapSize:0.8,transparent:true,opacity:.95,depthWrite:false}));
+    line.computeLineDistances();dyn.add(line);
+    const tip=new THREE.RingGeometry(1.0,1.25,32);tip.rotateX(-Math.PI/2);
+    const tm=new THREE.Mesh(tip,new THREE.MeshBasicMaterial({color:0xf2b544,transparent:true,opacity:.9,depthWrite:false}));
+    tm.position.set(view.stars[f.dest].x,0.2,view.stars[f.dest].y);dyn.add(tm);
+  }
+  if(sel!=null){selRing.visible=true;selRing.position.set(view.stars[sel].x,0.05,view.stars[sel].y);}else selRing.visible=false;
+}
+
+function refreshLabels(){
+  const vis=vision(view,0);
+  view.stars.forEach((st,i)=>{
+    const known=view.explored[i];
+    labelEls[i].className='lbl'+(known?'':' unk');
+    let h=`<div style="color:${known&&st.owner>=0?view.empires[st.owner].color:''}">${st.name}${known?'':' ?'}</div>`;
+    const fl=view.fleets.filter(f=>f.at===st.id&&(f.owner===0||vis[i]));
+    if(fl.length){
+      const shown=fl.slice(0,4).map(f=>`<span class="f" style="color:${view.empires[f.owner].color}">▲${f.ships.length}</span>`).join('');
+      h+=`<div>${shown}${fl.length>4?`<span class="f">+${fl.length-4}</span>`:''}</div>`;
+    }
+    labelEls[i].innerHTML=h;
+  });
+}
+
+const v3=new THREE.Vector3();
+function project(st){v3.set(st.x,0,st.y).project(camera);return{x:(v3.x+1)/2*innerWidth,y:(1-v3.y)/2*innerHeight,z:v3.z};}
+const t0=performance.now(),still=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function loop(now){
+  const t=(now-t0)/1000;
+  controls.update();
+  if(!still){
+    for(const m of spinners){const a=t*0.6+m.userData.phase;m.position.set(m.userData.cx+Math.cos(a)*2.8,1.2,m.userData.cz+Math.sin(a)*2.8);m.rotation.y=t*1.5;}
+    if(selRing.visible)selRing.scale.setScalar(1+0.08*Math.sin(t*3));
+  }
+  game.stars.forEach((st,i)=>{
+    const p=project(st),el=labelEls[i];
+    if(p.z>1||p.x<-60||p.x>innerWidth+60||p.y<-40||p.y>innerHeight+40){el.style.visibility='hidden';return;}
+    el.style.visibility='visible';
+    el.style.transform=`translate(${p.x.toFixed(1)}px,${(p.y+12).toFixed(1)}px) translate(-50%,0)`;
+  });
+  renderer.render(scene,camera);
+  requestAnimationFrame(loop);
+}
+
+function bindPointer(canvas){
+  let down=null,multi=false,count=0;
+  canvas.addEventListener('pointerdown',e=>{count++;if(count>1)multi=true;if(count===1){down={x:e.clientX,y:e.clientY,t:performance.now()};multi=false;}});
+  const up=e=>{
+    count=Math.max(0,count-1);
+    if(!down||multi){if(count===0)down=null;return;}
+    const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y),dt=performance.now()-down.t;down=null;
+    if(e.type!=='pointerup'||moved>9||dt>600)return;
+    let best=-1,bd=36;
+    game.stars.forEach((st,i)=>{const p=project(st);if(p.z>1)return;const d=Math.hypot(p.x-e.clientX,p.y-e.clientY);if(d<bd){bd=d;best=i;}});
+    tapStar(best<0?null:best);
+  };
+  canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
+}
+
+// ---------- interaction ----------
+function tapStar(i){
+  if(targeting){
+    if(i==null)return;
+    const f=fleetById(targeting.fleet);
+    if(f&&i!==f.at){
+      const total=TYPES.reduce((a,t)=>a+targeting.counts[t],0);
+      if(total>=f.ships.length)queue({t:'move',fleet:f.id,to:i});
+      else queue({t:'split',fleet:f.id,ships:{...targeting.counts},to:i});
+    }
+    targeting=null;picking=null;
+  }else{sel=i;picking=null;}
+  refresh();
+}
+
+function refresh(){view=previewOrders(game,0,pending);refreshScene();refreshLabels();renderHud();renderSheet();save();}
+
+function renderHud(){
+  $('turn').textContent=game.turn;
+  $('iu').textContent=avail();
+  $('inc').textContent='+'+incomeOf(view,0);
+  $('banner').hidden=!targeting;
+  $('undo').hidden=!pending.some(o=>o.t!=='build');
+  if(targeting){
+    const c=targeting.counts,parts=TYPES.filter(t=>c[t]).map(t=>plural(c[t],t)).join(', ');
+    $('bannerText').textContent=c.colony&&!c.fighter&&!c.scout?`Tap an unclaimed habitable star for ${parts}`:`Tap a destination for ${parts}`;
+  }
+}
+
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+function fleetCard(f,st,adj){
+  let note='Parked';
+  if(f.dest!=null){const p=route(adj,f.at,f.dest),turns=Math.ceil(p.length/fleetSpeed(view,f));
+    note=`Bound for ${esc(view.stars[f.dest].name)} · ${turns} ${turns===1?'turn':'turns'}`;}
+  else if(has(f,'colony')&&st.owner<0&&st.cap>0)note='Settles here at end of turn';
+  let h=`<div class="fleet"><div class="row"><div class="what"><b>Fleet ${f.id}</b><span>${describe(f)}</span><span class="state">${note}</span></div>
+    ${f.dest!=null?`<button class="btn small" data-act="hold" data-fleet="${f.id}">Hold</button>`:''}
+    ${picking&&picking.fleet===f.id?'':`<button class="btn small" data-act="send" data-fleet="${f.id}">Send…</button>`}</div>`;
+  if(picking&&picking.fleet===f.id){
+    const c=countTypes(f),k=picking.counts,total=TYPES.reduce((a,t)=>a+k[t],0);
+    h+=`<div class="pick"><div class="pickh">Choose ships to send</div>`;
+    for(const t of TYPES){if(!c[t])continue;
+      h+=`<div class="step"><span class="lab">${SHIP[t][1]}</span>
+        <button class="btn small icon" data-act="dec" data-type="${t}" aria-label="One fewer ${SHIP[t][0].toLowerCase()}" ${k[t]<=0?'disabled':''}>−</button>
+        <span class="n">${k[t]} / ${c[t]}</span>
+        <button class="btn small icon" data-act="inc" data-type="${t}" aria-label="One more ${SHIP[t][0].toLowerCase()}" ${k[t]>=c[t]?'disabled':''}>+</button></div>`;}
+    h+=`<div class="pacts"><button class="btn small" data-act="cancelpick">Cancel</button>
+      <button class="btn small" data-act="pickall">All ${f.ships.length}</button>
+      <button class="btn small primary" data-act="target" ${total?'':'disabled'}>Choose destination</button></div></div>`;
+  }
+  return h+`</div>`;
+}
+
+function renderSheet(){
+  const vis=vision(view,0),adj=adjOf(view);
+  const st=sel!=null?view.stars[sel]:null;
+  let h='';
+  if(!st){
+    $('sheetTitle').textContent=`Turn ${game.turn} report`;
+    const mine=view.stars.filter(s=>s.owner===0).length,fl=view.fleets.filter(f=>f.owner===0).length;
+    $('sheetSub').textContent=`${mine} ${mine===1?'colony':'colonies'} · ${fl} ${fl===1?'fleet':'fleets'} · tap a star to give orders`;
+  }else{
+    $('sheetTitle').textContent=st.name;
+    const known=view.explored[st.id],owner=known&&st.owner>=0?view.empires[st.owner]:null;
+    $('sheetSub').innerHTML=known?(owner?`<span class="dot" style="background:${owner.color}"></span>${owner.id===0?'Your colony':esc(owner.name)}`:(st.cap?'Unclaimed':'Unclaimed · barren')):'Uncharted';
+    if(!known)h+=`<p class="note">Nothing is known about this star yet. Bring any fleet within one jump to chart it.</p>`;
+    else{
+      const cap=capOf(view,st);
+      h+=`<dl class="facts">
+        <div><dt>Habitability</dt><dd>${st.cap||'Barren'}</dd></div>
+        <div><dt>Population</dt><dd>${st.owner>=0?st.pop+' / '+cap:'—'}</dd></div>
+        <div><dt>Yield</dt><dd>${st.owner>=0?'+'+st.pop+' IU':'—'}</dd></div>
+        <div><dt>Lanes</dt><dd>${adj[st.id].length}</dd></div></dl>`;
+    }
+    const mine=view.fleets.filter(f=>f.owner===0&&f.at===st.id).sort((a,b)=>a.id-b.id);
+    if(mine.length){
+      const parked=mine.filter(f=>f.dest==null).length;
+      h+=`<div class="sec"><div class="sech"><h3>Your fleets here</h3>${parked>1?`<button class="btn small" data-act="merge">Merge ${parked} parked fleets</button>`:''}</div>`;
+      h+=mine.map(f=>fleetCard(f,st,adj)).join('')+`</div>`;
+    }
+    if(vis[st.id]){
+      const foes=view.fleets.filter(f=>f.at===st.id&&f.owner!==0);
+      if(foes.length){
+        h+=`<div class="sec"><h3>Foreign fleets sighted</h3>`;
+        for(const f of foes){const e=view.empires[f.owner];
+          h+=`<div class="row"><div class="what"><b><span class="dot" style="background:${e.color}"></span>${esc(e.name)}</b><span>${describe(f)}</span></div></div>`;}
+        h+=`</div>`;
+      }
+    }
+    if(st.owner===0){
+      h+=`<div class="sec"><h3>Shipyard · ${avail()} IU free</h3><div class="builds">`;
+      for(const t of TYPES)h+=`<button class="btn" data-act="build" data-type="${t}" ${avail()<COST[t]?'disabled':''}>${SHIP[t][0]}<i>${COST[t]} IU</i></button>`;
+      h+=`</div><p class="note" style="margin-top:6px">New ships join a parked fleet here at the end of the turn.</p>`;
+      const q=pending.map((o,i)=>[o,i]).filter(([o])=>o.t==='build'&&o.star===st.id);
+      if(q.length)h+=`<div class="chips">${q.map(([o,i])=>`<span class="chip">${SHIP[o.kind][0]} queued<button data-act="unbuild" data-i="${i}" aria-label="Cancel">×</button></span>`).join('')}</div>`;
+      h+=`</div>`;
+    }
+  }
+  const ev=game.events||[];
+  h+=`<div class="sec"><h3>${st?'Last turn':'Dispatches'}</h3>`;
+  h+=ev.length?`<ul class="log">${ev.map(e=>`<li class="${e.kind}" ${e.star!=null?`data-star="${e.star}"`:''}>${esc(e.msg)}</li>`).join('')}</ul>`:`<p class="note">A quiet turn.</p>`;
+  h+=`</div>`;
+  if(st)h+=`<div><button class="btn small" data-act="deselect">Close</button></div>`;
+  $('sheetBody').innerHTML=h;
+}
+
+$('sheetBody').addEventListener('click',e=>{
+  const li=e.target.closest('li[data-star]');
+  if(li){const i=+li.dataset.star;sel=i;picking=null;centerOn(game.stars[i]);refresh();return;}
+  const b=e.target.closest('[data-act]');if(!b||b.disabled)return;
+  const act=b.dataset.act,type=b.dataset.type,fid=+b.dataset.fleet;
+  if(act==='send'){
+    const f=fleetById(fid),c=countTypes(f);
+    if(f.ships.length===1){targeting={fleet:fid,counts:c};renderHud();return;}
+    picking={fleet:fid,counts:c};
+  }
+  if(act==='inc'||act==='dec'){const c=countTypes(fleetById(picking.fleet));picking.counts[type]=Math.max(0,Math.min(c[type],picking.counts[type]+(act==='inc'?1:-1)));}
+  if(act==='pickall')picking.counts=countTypes(fleetById(picking.fleet));
+  if(act==='cancelpick')picking=null;
+  if(act==='target'){targeting={fleet:picking.fleet,counts:{...picking.counts}};renderHud();return;}
+  if(act==='hold'){const f=fleetById(fid);queue({t:'move',fleet:fid,to:f.at});}
+  if(act==='merge')queue({t:'merge',star:sel});
+  if(act==='build'&&avail()>=COST[type])queue({t:'build',star:sel,kind:type});
+  if(act==='unbuild')pending.splice(+b.dataset.i,1);
+  if(act==='deselect'){sel=null;picking=null;}
+  refresh();
+});
+$('cancelTarget').onclick=()=>{targeting=null;renderHud();};
+$('undo').onclick=()=>{
+  // remove the most recent non-build order (builds have their own × chips)
+  for(let i=pending.length-1;i>=0;i--)if(pending[i].t!=='build'){pending.splice(i,1);break;}
+  picking=null;targeting=null;refresh();
+};
+
+$('end').onclick=()=>{
+  if(game.over){showOver();return;}
+  const rng=makeRng(game.rngState);
+  const orders={0:pending,1:aiOrders(sightOf(game,1),1,rng),2:aiOrders(sightOf(game,2),2,rng)};
+  const{state}=resolveTurn(game,orders,rng);
+  state.rngState=rng.state;
+  game=state;pending=[];targeting=null;picking=null;
+  if(sel!=null&&!game.fleets.some(f=>f.owner===0&&f.at===sel)&&game.stars[sel].owner!==0)sel=null;
+  refresh();
+  if(game.over)showOver();
+};
+
+function renderTech(){
+  const e=view.empires[0],base=game.empires[0];
+  $('techKicker').textContent=`${avail()} IU free after queued orders`;
+  $('techList').innerHTML=Object.entries(TECH).map(([k,t])=>{
+    const queued=pending.some(o=>o.t==='research'&&o.tech===k),l=base.tech[k],c=techCost(l),maxed=l>=t.max;
+    const pips=Array.from({length:t.max},(_,i)=>`<i class="${i<e.tech[k]?'on':''}"></i>`).join('');
+    return `<div class="tech"><div class="what"><b>${t.name}</b><span class="pips">${pips}</span><span>${t.desc}</span></div>
+      ${maxed?'<span class="note">Complete</span>':queued?`<button class="btn small" data-tech="${k}" data-q="1">Queued ×</button>`:
+      `<button class="btn small primary" data-tech="${k}" ${avail()<c?'disabled':''}>${c} IU</button>`}</div>`;
+  }).join('');
+}
+$('techList').addEventListener('click',e=>{
+  const b=e.target.closest('[data-tech]');if(!b||b.disabled)return;const k=b.dataset.tech;
+  if(b.dataset.q)pending=pending.filter(o=>!(o.t==='research'&&o.tech===k));
+  else if(avail()>=techCost(game.empires[0].tech[k]))pending.unshift({t:'research',tech:k});
+  refresh();renderTech();
+});
+$('techBtn').onclick=()=>{renderTech();$('techModal').hidden=false;};
+$('helpBtn').onclick=()=>openHelp();
+const DIFF_NOTE='Easy rivals attack late and earn less. Hard rivals see the whole map, strike early and earn more.';
+function openHelp(){
+  newArmed=null;
+  document.querySelectorAll('#helpModal [data-diff]').forEach(b=>b.classList.remove('armed'));
+  $('diffNote').textContent=DIFF_NOTE;
+  $('seedLine').textContent=`Galaxy ${game.seed} · ${diffOf(game).label} · turn ${game.turn}`;
+  $('helpModal').hidden=false;
+}
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{$(b.dataset.close).hidden=true;if(b.dataset.close==='helpModal')markHelp();});
+document.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{
+  const d=b.dataset.diff,inHelp=!!b.closest('#helpModal');
+  if(inHelp&&!game.over&&newArmed!==d){
+    newArmed=d;
+    document.querySelectorAll('#helpModal [data-diff]').forEach(x=>x.classList.toggle('armed',x===b));
+    $('diffNote').textContent=`Tap ${DIFF[d].label} again to abandon this galaxy and start a new one.`;
+    return;
+  }
+  startNew(d);$('helpModal').hidden=true;$('overModal').hidden=true;
+});
+function startNew(d){
+  game=newGame(Math.floor(Math.random()*900000)+100000,d);pending=[];sel=null;targeting=null;picking=null;
+  buildStars();centerOn(game.stars[game.empires[0].home],true);refresh();
+}
+function showOver(){
+  const o=game.over;
+  $('overH').textContent=o.win?'The Reach is yours':'The Concord has fallen';
+  const left=game.empires.filter(e=>e.alive&&e.id!==0).map(e=>e.name).join(' and ');
+  $('overText').textContent=o.win?`Every rival was broken by turn ${o.turn} on ${diffOf(game).label}. Galaxy ${game.seed} can be replayed from its seed.`:
+    `Your last colony fell on turn ${o.turn}. ${left} ${left.includes(' and ')?'hold':'holds'} the cluster.`;
+  $('overModal').hidden=false;
+}
+addEventListener('keydown',e=>{
+  if(e.key==='Escape'){if(targeting){targeting=null;renderHud();}else if(picking){picking=null;renderSheet();}else document.querySelectorAll('.modal').forEach(m=>m.hidden=true);}
+});
+
+// ---------- boot ----------
+function start(data){
+  const saved=valid(data)?data:load();
+  if(saved){game=saved.game;pending=saved.pending||[];}else game=newGame(Math.floor(Math.random()*900000)+100000);
+  view=previewOrders(game,0,pending);
+  try{initScene();}catch(err){document.body.insertAdjacentHTML('beforeend','<div class="fail"><p>This device could not start WebGL, which the star chart needs.</p></div>');return;}
+  refresh();
+  if(!seenHelp())openHelp();
+  window.claude?.hot?.snapshot?.(()=>({game,pending}));
+}
+if(typeof THREE==='undefined'||!THREE.OrbitControls){
+  document.body.insertAdjacentHTML('beforeend','<div class="fail"><p>The 3D library did not load. Check your connection and reload.</p></div>');
+}else{
+  const hot=window.claude?.hot;
+  hot?.ready?hot.ready(start):start(hot?.data??{});
+}
+})();
+</script>
