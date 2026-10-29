@@ -386,6 +386,64 @@ function aiOrders(s,e,rng){
   }
   return out;
 }
+// ---------- saved games ----------
+// A save is plain data: a format name, a version and the whole game state, plus any orders queued but not yet run.
+// Bump SAVE_VERSION whenever the shape of the state changes, and add a migration from the old version if one is possible.
+const SAVE_FORMAT='gabriels-reach-save';
+const SAVE_VERSION=1;
+const MIGRATIONS={};// version n -> function turning a version-n save into a version n+1 save
+const SAVE_YAML={flowLevel:3,lineWidth:-1,noRefs:true};// js-yaml options: one line per star, planet, fleet and lane
+const ORDER_TYPES=['research','move','split','target','merge','build'];
+function toSave(game,orders=[]){
+  return {format:SAVE_FORMAT,version:SAVE_VERSION,galaxy:game.seed,difficulty:game.difficulty,turn:game.turn,orders,game};
+}
+// Returns {game,orders} or throws an Error whose message can be shown to the player as it is.
+function fromSave(d){
+  if(!d||typeof d!=='object'||Array.isArray(d)||d.format!==SAVE_FORMAT)throw new Error("This file isn't a Gabriel's Reach save.");
+  if(!Number.isInteger(d.version))throw new Error('This save has no version, so it cannot be loaded safely.');
+  if(d.version>SAVE_VERSION)throw new Error(`This save was made by a newer version of the game (save format ${d.version}; this game reads format ${SAVE_VERSION}). Reload the page to get the latest version, then try again.`);
+  while(d.version<SAVE_VERSION){
+    const step=MIGRATIONS[d.version];
+    if(!step)throw new Error(`This save uses an older format (${d.version}) that this version of the game can no longer read.`);
+    d=step(d);
+  }
+  const problem=checkSave(d.game,d.orders??[]);
+  if(problem)throw new Error(`The save file is damaged: ${problem}.`);
+  return {game:d.game,orders:d.orders??[]};
+}
+// Structural checks, so a hand-edited or truncated file is refused instead of breaking the game. Returns a problem or null.
+function checkSave(g,orders){
+  const int=x=>Number.isInteger(x),num=x=>typeof x==='number'&&Number.isFinite(x),arr=Array.isArray,obj=x=>x&&typeof x==='object'&&!arr(x);
+  if(!obj(g))return 'the game section is missing';
+  if(!int(g.seed)||!int(g.turn)||g.turn<1||!int(g.rngState))return 'the galaxy number, turn or random state is not a whole number';
+  if(!DIFF[g.difficulty])return `the difficulty "${g.difficulty}" is unknown`;
+  const S=arr(g.stars)?g.stars.length:0;
+  if(S<2||!g.stars.every((st,i)=>obj(st)&&st.id===i&&num(st.x)&&num(st.y)&&typeof st.name==='string'&&int(st.kind)&&st.kind>=0&&st.kind<STAR_KINDS.length))return 'a star entry is invalid';
+  const star=i=>int(i)&&i>=0&&i<S;
+  if(!arr(g.lanes)||!g.lanes.every(l=>arr(l)&&l.length===2&&star(l[0])&&star(l[1])))return 'a lane joins stars that do not exist';
+  if(!arr(g.empires)||g.empires.length!==EMP.length)return `there should be ${EMP.length} empires`;
+  for(const [i,e] of g.empires.entries()){
+    if(!obj(e)||e.id!==i||!num(e.credits)||typeof e.alive!=='boolean'||!star(e.home)||!obj(e.tech))return `empire ${i} is invalid`;
+    for(const k of Object.keys(TECH))if(!int(e.tech[k])||e.tech[k]<0||e.tech[k]>TECH[k].max)return `empire ${i} has an impossible ${TECH[k].name} level`;
+  }
+  const owner=o=>int(o)&&o>=-1&&o<EMP.length;
+  if(!arr(g.planets)||!g.planets.every((p,i)=>obj(p)&&p.id===i&&star(p.star)&&PLANET_TYPES[p.type]&&typeof p.name==='string'&&int(p.cap)&&p.cap>=0&&owner(p.owner)&&int(p.pop)&&p.pop>=0))return 'a planet entry is invalid';
+  const P=g.planets.length;
+  let maxF=0,maxS=0;
+  if(!arr(g.fleets))return 'the fleet list is missing';
+  for(const f of g.fleets){
+    if(!obj(f)||!int(f.id)||!owner(f.owner)||f.owner<0||!star(f.at)||!(f.dest==null||star(f.dest))||!(f.target==null||(int(f.target)&&f.target<P))
+      ||!arr(f.ships)||!f.ships.length||!f.ships.every(x=>obj(x)&&int(x.id)&&TYPES.includes(x.type)))return `fleet ${f&&f.id} is invalid`;
+    maxF=Math.max(maxF,f.id);for(const x of f.ships)maxS=Math.max(maxS,x.id);
+  }
+  if(!int(g.nextFleet)||g.nextFleet<=maxF||!int(g.nextShip)||g.nextShip<=maxS)return 'the fleet or ship counters are behind the fleets';
+  if(!arr(g.intel)||g.intel.length!==EMP.length||!g.intel.every(m=>obj(m)&&arr(m.stars)&&m.stars.length===S&&arr(m.planets)&&m.planets.length===P))return 'the empires\' maps are invalid';
+  if(!arr(g.events))return 'the turn report is missing';
+  if(!(g.over==null||obj(g.over)))return 'the game-over record is invalid';
+  if(!arr(orders)||!orders.every(o=>obj(o)&&ORDER_TYPES.includes(o.t)))return 'a queued order is invalid';
+  return null;
+}
 // CORE-END
 if(typeof module!=='undefined')module.exports={TYPES,COST,SHIP,TECH,techCost,DIFF,diffOf,EMP,STAR_KINDS,PLANET_TYPES,SYSTEMS,makeRng,adjOf,hops,route,
-  fleetSpeed,countTypes,has,planetsAt,capOf,incomeOf,vision,updateIntel,fogView,sightOf,newGame,applyOrders,previewOrders,settleChoice,resolveTurn,aiOrders};
+  fleetSpeed,countTypes,has,planetsAt,capOf,incomeOf,vision,updateIntel,fogView,sightOf,newGame,applyOrders,previewOrders,settleChoice,resolveTurn,aiOrders,
+  SAVE_FORMAT,SAVE_VERSION,SAVE_YAML,toSave,fromSave,checkSave};

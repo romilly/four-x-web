@@ -143,7 +143,10 @@ button{font:inherit;color:inherit;cursor:pointer}
 .newg h3{margin:0 0 8px;font:500 10px var(--f-data);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
 .diffs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .diffs .btn.armed{background:var(--alarm);border-color:var(--alarm);color:var(--gold-ink)}
-#diffNote{margin-top:8px;font-size:12.5px}
+#diffNote,#saveNote,#loadSummary{margin-top:8px;font-size:12.5px}
+.diffs.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.confirm{margin-top:8px;padding:10px;border:1px solid var(--gold);border-radius:8px}
+.confirm #loadSummary{margin:0 0 8px;color:var(--ink)}
 .lbl .sub{font-size:10px;color:var(--dim)}
 .ppips{display:flex;justify-content:center;gap:3px;margin-top:2px}
 .ppips i{display:block;width:6px;height:6px;border-radius:50%;box-shadow:0 0 0 1px rgba(6,9,19,.8)}
@@ -206,6 +209,19 @@ button{font:inherit;color:inherit;cursor:pointer}
       <li>Spend industry on ships and research. Fighters attack anything hostile. Fighters in a system besiege one undefended enemy planet a turn: the one you pick with <b>Attack</b>, or else the weakest. Planets shoot back.</li>
       <li>Touch: drag to pan, pinch to zoom, drag with two fingers to rotate. Mouse: drag to pan, scroll to zoom, right-drag or Shift-drag to rotate. Esc cancels a send or leaves a system.</li>
     </ul>
+    <div class="newg" id="saves">
+      <h3>Saved games</h3>
+      <div class="diffs two">
+        <button class="btn" id="saveBtn">Save as YAML</button>
+        <button class="btn" id="loadBtn">Load a save</button>
+      </div>
+      <input type="file" id="loadFile" accept=".yaml,.yml,.txt,text/yaml,text/plain" hidden>
+      <div class="confirm" id="loadConfirm" hidden>
+        <p class="note" id="loadSummary"></p>
+        <div class="diffs two"><button class="btn" id="loadCancel">Cancel</button><button class="btn primary" id="loadGo">Replace current game</button></div>
+      </div>
+      <p class="note" id="saveNote" role="status">Your game also saves itself in this browser after every move.</p>
+    </div>
     <div class="newg">
       <h3>Start a new galaxy</h3>
       <div class="diffs" data-confirm="1">
@@ -235,6 +251,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
 <script src="core.js"></script>
 <script>
 (()=>{
@@ -726,6 +743,7 @@ function openHelp(){
   newArmed=null;
   document.querySelectorAll('#helpModal [data-diff]').forEach(b=>b.classList.remove('armed'));
   $('diffNote').textContent=DIFF_NOTE;
+  $('loadConfirm').hidden=true;toLoad=null;
   $('seedLine').textContent=`Galaxy ${game.seed} · ${diffOf(game).label} · turn ${game.turn}`;
   $('helpModal').hidden=false;
 }
@@ -740,6 +758,47 @@ document.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{
   }
   startNew(d);$('helpModal').hidden=true;$('overModal').hidden=true;
 });
+// ---------- saved games as YAML ----------
+// Inside Claude the viewer only offers some file types, so the YAML goes out as .yaml.txt there; elsewhere it is a plain .yaml download.
+let toLoad=null;
+const saveNote=t=>{$('saveNote').textContent=t;};
+async function saveGame(){
+  if(typeof jsyaml==='undefined'){saveNote('The YAML library did not load. Check your connection and reload.');return;}
+  const text="# Gabriel's Reach saved game. Load it from the ? panel with Load a save.\n"+jsyaml.dump(toSave(game,pending),SAVE_YAML);
+  const base=`gabriels-reach-${game.seed}-turn-${game.turn}`;
+  if(window.claude?.use){
+    const dl=await window.claude.use('downloads');
+    if(!dl){saveNote('Saving files is not available in this view. Open the game in a browser to save.');return;}
+    try{await dl.save({filename:base+'.yaml.txt',data:text});saveNote(`Saved ${base}.yaml.txt. It is YAML; Claude only offers some file types, so it ends in .txt.`);}
+    catch(e){saveNote(e&&e.code==='declined'?'Save cancelled.':`The save did not go through (${(e&&e.message)||'unknown error'}).`);}
+    return;
+  }
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'application/x-yaml'}));a.download=base+'.yaml';
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  saveNote(`Saved ${base}.yaml to your downloads.`);
+}
+$('saveBtn').onclick=saveGame;
+$('loadBtn').onclick=()=>{$('loadConfirm').hidden=true;toLoad=null;$('loadFile').click();};
+$('loadFile').onchange=async e=>{
+  const file=e.target.files[0];e.target.value='';if(!file)return;
+  if(typeof jsyaml==='undefined'){saveNote('The YAML library did not load. Check your connection and reload.');return;}
+  let data;
+  try{data=jsyaml.load(await file.text());}
+  catch(err){saveNote(`${file.name} is not valid YAML${err.mark?` (line ${err.mark.line+1})`:''}.`);return;}
+  try{toLoad=fromSave(data);}catch(err){saveNote(err.message);return;}
+  const g=toLoad.game,mine=g.planets.filter(p=>p.owner===0).length;
+  $('loadSummary').textContent=`${file.name}: galaxy ${g.seed}, ${DIFF[g.difficulty].label}, turn ${g.turn}, ${mine} ${mine===1?'colony':'colonies'}. Loading replaces your current game.`;
+  $('loadConfirm').hidden=false;saveNote('');
+};
+$('loadCancel').onclick=()=>{toLoad=null;$('loadConfirm').hidden=true;saveNote('Load cancelled. Your current game is unchanged.');};
+$('loadGo').onclick=()=>{
+  if(!toLoad)return;
+  if(mode==='system')exitSystem();
+  game=toLoad.game;pending=toLoad.orders;toLoad=null;sel=null;targeting=null;picking=null;
+  buildStars();centerOn(game.stars[game.empires[0].home],true);refresh();
+  $('loadConfirm').hidden=true;$('helpModal').hidden=true;saveNote(`Loaded galaxy ${game.seed} at turn ${game.turn}.`);
+};
+
 function startNew(d){
   if(mode==='system')exitSystem();
   game=newGame(Math.floor(Math.random()*900000)+100000,d);pending=[];sel=null;targeting=null;picking=null;

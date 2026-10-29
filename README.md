@@ -11,9 +11,20 @@ Open `index.html` in a browser. It loads three.js from a CDN, so it needs a conn
 - Touch: drag to pan, pinch to zoom, drag with two fingers to rotate.
 - Mouse: drag to pan, scroll to zoom, right-drag or Shift-drag to rotate.
 
+## Saved games
+
+Open the **?** panel and choose **Save as YAML** or **Load a save**. A save is a readable YAML file
+with a `format` name and a `version` (the save-format version). The game refuses files that are not
+saves, saves from a newer version, older formats it cannot migrate, and damaged files, and says why.
+Inside Claude the file is offered as `.yaml.txt`, because Claude only allows some download types;
+the contents are the same.
+
+When the shape of the game state changes, bump `SAVE_VERSION` in `core.js` and, if possible, add a
+migration from the previous version to `MIGRATIONS`.
+
 ## Layout
 
-- `core.js` — the pure game core: plain data in, plain data out, no DOM, no clock.
+- `core.js` — the pure game core (including `toSave` / `fromSave`): plain data in, plain data out, no DOM, no clock.
   `newGame(seed, difficulty)`, `resolveTurn(state, orders, rng)`, `aiOrders(view, empire, rng)`,
   `fogView(state, empire)` and friends.
 - `index.html` — the three.js renderer and the interface, an adapter over the core.
@@ -22,7 +33,8 @@ Open `index.html` in a browser. It loads three.js from a CDN, so it needs a conn
 ## Test
 
 ```
-node --test
+npm install
+npm test
 ```
 
-Needs Node 18 or later. No dependencies.
+Needs Node 18 or later. The only dependency is `js-yaml`, used by the save tests (the page loads it from a CDN).
