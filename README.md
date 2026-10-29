@@ -6,7 +6,10 @@ research, and out-fight two scripted rivals.
 
 ## Play
 
-Open `index.html` in a browser. It loads three.js from a CDN, so it needs a connection.
+**Play it in your browser: https://romilly.github.io/four-x-web/**
+
+New players are offered a short tutorial on their first visit. You can also open `index.html` from a copy of
+this repository; it loads three.js and js-yaml from CDNs, so it needs a connection.
 
 - Touch: drag to pan, pinch to zoom, drag with two fingers to rotate.
 - Mouse: drag to pan, scroll to zoom, right-drag or Shift-drag to rotate.
