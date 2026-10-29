@@ -1,9 +1,17 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Gabriel's Reach</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Michroma&family=IBM+Plex+Sans+Condensed:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
+/* Standalone basics: the page must work outside Claude's viewer too (GitHub Pages, a local file). */
+[hidden]{display:none!important}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 /* Layout: a full-bleed star chart; an instrument strip across the top and a chart-table sheet docked below (a floating card on wide screens). */
 :root{
   color-scheme: dark;
@@ -139,6 +147,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .fail{position:fixed;inset:0;display:grid;place-items:center;text-align:center;color:var(--dim)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
+</head>
+<body>
 
 <canvas id="gl" aria-label="Galaxy star chart"></canvas>
 <div id="labels"></div>
@@ -629,3 +639,5 @@ if(typeof THREE==='undefined'||!THREE.OrbitControls){
 }
 })();
 </script>
+</body>
+</html>
