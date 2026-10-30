@@ -1,4 +1,6 @@
 // CORE-START — pure domain core: plain data in, plain data out. No DOM, no I/O, no clock.
+// The game's version, semantic versioning. Keep package.json and CHANGELOG.md in step (a test checks).
+const GAME_VERSION='1.0.0';
 const TYPES=['fighter','colony','scout'];
 const COST={fighter:15,colony:25,scout:8};
 const SHIP={fighter:['Fighter','Fighters'],colony:['Colony ship','Colony ships'],scout:['Scout','Scouts']};
@@ -448,7 +450,7 @@ const MIGRATIONS={
 const SAVE_YAML={flowLevel:3,lineWidth:-1,noRefs:true};// js-yaml options: one line per star, planet, fleet and lane
 const ORDER_TYPES=['research','move','split','target','merge','build'];
 function toSave(game,orders=[]){
-  return {format:SAVE_FORMAT,version:SAVE_VERSION,galaxy:game.seed,size:game.size,victory:game.victory,difficulty:game.difficulty,turn:game.turn,orders,game};
+  return {format:SAVE_FORMAT,version:SAVE_VERSION,gameVersion:GAME_VERSION,galaxy:game.seed,size:game.size,victory:game.victory,difficulty:game.difficulty,turn:game.turn,orders,game};
 }
 // Returns {game,orders} or throws an Error whose message can be shown to the player as it is.
 function fromSave(d){
@@ -500,6 +502,6 @@ function checkSave(g,orders){
   return null;
 }
 // CORE-END
-if(typeof module!=='undefined')module.exports={TYPES,COST,SHIP,TECH,techCost,DIFF,diffOf,EMP,SIZES,sizeOf,VICTORY,habitableCount,dominanceOf,STAR_KINDS,PLANET_TYPES,SYSTEMS,makeRng,adjOf,hops,route,
+if(typeof module!=='undefined')module.exports={GAME_VERSION,TYPES,COST,SHIP,TECH,techCost,DIFF,diffOf,EMP,SIZES,sizeOf,VICTORY,habitableCount,dominanceOf,STAR_KINDS,PLANET_TYPES,SYSTEMS,makeRng,adjOf,hops,route,
   fleetSpeed,countTypes,has,planetsAt,capOf,shipyardCapacity,incomeOf,vision,updateIntel,fogView,sightOf,newGame,applyOrders,previewOrders,settleChoice,colonyOrder,resolveTurn,aiOrders,
   SAVE_FORMAT,SAVE_VERSION,SAVE_YAML,toSave,fromSave,checkSave};

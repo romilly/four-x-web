@@ -50,6 +50,8 @@ body{
   background:linear-gradient(var(--void),rgba(6,9,19,.7) 65%,rgba(6,9,19,0));pointer-events:none}
 #hud>*{pointer-events:auto}
 .brand{font:400 11px/1 var(--f-display);letter-spacing:.2em;color:var(--gold);text-transform:uppercase;margin-right:auto}
+.ver{font:500 11px var(--f-data);letter-spacing:.04em;text-transform:none;color:var(--dim);margin-left:8px}
+.verfoot{margin-top:4px;font:500 10.5px var(--f-data);color:var(--dim);text-align:right}
 .stat{font:500 13px var(--f-data);font-variant-numeric:tabular-nums;white-space:nowrap}
 .stat small{color:var(--dim);font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-right:5px}
 .stat .up{color:var(--teal);font-size:11px;margin-left:3px}
@@ -215,7 +217,7 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
 <div id="labels"></div>
 
 <header id="hud">
-  <div class="brand">Gabriel's Reach</div>
+  <div class="brand">Gabriel's Reach <span class="ver" id="verHud"></span></div>
   <div class="stat"><small>Turn</small><span id="turn">1</span></div>
   <div class="stat" title="Industry units available after queued orders"><small><span class="lg">Industry</span><span class="sm">IU</span></small><span id="iu">0</span><span class="up" id="inc">+0</span></div>
   <div class="stat" id="domStat" title="Your share of all habitable planets; 60% wins" hidden><small>Share</small><span id="dom">0%</span><span class="of">/60%</span></div>
@@ -839,6 +841,7 @@ function renderSheet(){
   h+=ev.length?`<ul class="log">${ev.map(e=>`<li class="${e.kind}" ${e.star!=null?`data-star="${e.star}"`:''}>${esc(e.msg)}</li>`).join('')}</ul>`:`<p class="note">A quiet turn.</p>`;
   h+=`</div>`;
   if(st&&mode==='galaxy')h+=`<div><button class="btn small" data-act="deselect">Close</button></div>`;
+  h+=`<div class="verfoot">Gabriel's Reach v${GAME_VERSION}</div>`;
   $('sheetBody').innerHTML=h;
   coachUpdate();
 }
@@ -928,7 +931,7 @@ function openHelp(tab='basics'){
   document.querySelectorAll('#helpModal [data-diff]').forEach(b=>b.classList.remove('armed'));
   $('diffNote').textContent=DIFF_NOTE;
   $('loadConfirm').hidden=true;toLoad=null;
-  $('seedLine').textContent=`Galaxy ${game.seed} · ${sizeOf(game).label} · ${VICTORY[game.victory].label} · ${diffOf(game).label} · turn ${game.turn}`;
+  $('seedLine').textContent=`Version ${GAME_VERSION} · Galaxy ${game.seed} · ${sizeOf(game).label} · ${VICTORY[game.victory].label} · ${diffOf(game).label} · turn ${game.turn}`;
   const rv=game.empires.slice(1).map(e=>`<b style="color:${e.color}">${esc(e.name)}</b>`);
   $('rivalList').innerHTML=`${rv.length===2?'Two':rv.length===4?'Four':rv.length===6?'Six':rv.length} rivals share this cluster: ${rv.slice(0,-1).join(', ')} and ${rv[rv.length-1]}.`;
   $('victoryLine').innerHTML=game.victory==='dominance'
@@ -1099,6 +1102,7 @@ document.querySelectorAll('[data-tut="start"]').forEach(b=>b.onclick=()=>{
 });
 
 // ---------- boot ----------
+$('verHud').textContent='v'+GAME_VERSION;
 function start(data){
   const saved=valid(data)?data:load();
   if(saved){game=saved.game;pending=saved.pending||[];game.size??='small';game.victory??='total';}else game=newGame(Math.floor(Math.random()*900000)+100000);

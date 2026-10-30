@@ -40,6 +40,13 @@ the contents are the same.
 When the shape of the game state changes, bump `SAVE_VERSION` in `core.js` and, if possible, add a
 migration from the previous version to `MIGRATIONS`.
 
+## Versions
+
+The game uses semantic versioning; see [CHANGELOG.md](CHANGELOG.md). The version shows in the page header
+(on phones, in the ? panel and at the foot of the orders panel), so a screenshot tells you which version
+someone is running. To release: update `GAME_VERSION` in `core.js`, `version` in `package.json` and add a
+CHANGELOG entry (a test checks all three agree), then tag the commit, e.g. `git tag v1.1.0`.
+
 ## Layout
 
 - `core.js` — the pure game core (including `toSave` / `fromSave`): plain data in, plain data out, no DOM, no clock.
