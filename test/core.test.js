@@ -167,3 +167,58 @@ test('difficulty levels rank in order for a scripted stand-in', () => {
   const easy = held('easy'), normal = held('normal'), hard = held('hard');
   assert.ok(easy > normal && normal > hard, `easy ${easy}, normal ${normal}, hard ${hard}`);
 });
+
+// Two colony ships in one fleet, two free planets in the system.
+function twoShips() {
+  const s = g.newGame(33), h = s.empires[0].home, f = s.fleets.find(f => f.owner === 0);
+  f.ships.push({ id: 99, type: 'colony' });
+  const [a, b] = g.planetsAt(s, h).filter(p => p.owner < 0 && p.cap > 0).map(p => p.id);
+  return { s, h, f, a, b };
+}
+
+test('two colony ships in one fleet can settle two planets in the same turn', () => {
+  const { s, h, f, a, b } = twoShips();
+  const orders = [];
+  for (const planet of [a, b]) orders.push(g.colonyOrder(g.previewOrders(s, 0, orders), f.id, planet));
+  const r = g.resolveTurn(s, { 0: orders }, g.makeRng(1)).state;
+  assert.equal(r.planets.find(p => p.id === a).owner, 0);
+  assert.equal(r.planets.find(p => p.id === b).owner, 0);
+});
+
+test('Colonise on a fleet with no target simply aims it', () => {
+  const { s, f, a } = twoShips();
+  assert.deepEqual(g.colonyOrder(s, f.id, a), { t: 'target', fleet: f.id, planet: a });
+});
+
+test('Colonise splits off one colony ship when the fleet is already aimed elsewhere', () => {
+  const { s, f, a, b } = twoShips();
+  const v = g.previewOrders(s, 0, [{ t: 'target', fleet: f.id, planet: a }]);
+  assert.deepEqual(g.colonyOrder(v, f.id, b), { t: 'split', fleet: f.id, ships: { colony: 1 }, to: f.at, target: b });
+});
+
+test('a fleet whose only ship is a colony ship is re-aimed, not split', () => {
+  const { s, f, a, b } = twoShips();
+  f.ships = [{ id: 3, type: 'colony' }];
+  const v = g.previewOrders(s, 0, [{ t: 'target', fleet: f.id, planet: a }]);
+  assert.deepEqual(g.colonyOrder(v, f.id, b), { t: 'target', fleet: f.id, planet: b });
+});
+
+test('Colonise keeps fighters on their attack target by splitting the colony ship off', () => {
+  const { s, f, a } = twoShips();
+  const enemy = s.planets.find(p => p.owner === 1);
+  f.target = enemy.id;
+  assert.equal(g.colonyOrder(s, f.id, a).t, 'split');
+});
+
+test('a fleet still travelling splits its colony ship toward the same destination', () => {
+  const { s, h, f, a, b } = twoShips();
+  f.at = g.adjOf(s)[h][0]; f.dest = h; f.target = a;
+  assert.deepEqual(g.colonyOrder(s, f.id, b), { t: 'split', fleet: f.id, ships: { colony: 1 }, to: h, target: b });
+});
+
+test('a fleet with one colony ship already aimed at a free planet is re-aimed, not split', () => {
+  const { s, f, a, b } = twoShips();
+  f.ships = f.ships.filter(x => x.id !== 99); // fighters, one colony ship, a scout
+  const v = g.previewOrders(s, 0, [{ t: 'target', fleet: f.id, planet: a }]);
+  assert.deepEqual(g.colonyOrder(v, f.id, b), { t: 'target', fleet: f.id, planet: b });
+});

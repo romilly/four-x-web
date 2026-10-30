@@ -240,6 +240,16 @@ function settleChoice(s,f){
   return planetsAt(s,f.at).find(p=>p.id===f.target&&p.owner<0&&p.cap>0)||null;
 }
 
+// The order to give when the player presses Colonise on planet for this fleet. A fleet holds one target, so a fleet
+// already aimed elsewhere (another planet to settle, or an enemy planet its fighters attack) splits off one colony ship
+// aimed at this planet instead; a fleet whose only colony ship is aimed at another free planet is simply re-aimed. That lets several colony ships in one fleet settle several planets in the same turn.
+function colonyOrder(s,fleetId,planetId){
+  const f=s.fleets.find(x=>x.id===fleetId);
+  const aimedToSettle=f&&f.target!=null&&s.planets[f.target]?.owner<0;
+  if(!f||f.target==null||f.target===planetId||(aimedToSettle&&countTypes(f).colony<2))return {t:'target',fleet:fleetId,planet:planetId};
+  return {t:'split',fleet:fleetId,ships:{colony:1},to:f.dest??f.at,target:planetId};
+}
+
 function resolveTurn(state,ordersBy,rng){
   const s=clone(state),adj=adjOf(s),ev=[];
   const say=(msg,kind,star)=>ev.push(star==null?{msg,kind}:{msg,kind,star});
@@ -480,5 +490,5 @@ function checkSave(g,orders){
 }
 // CORE-END
 if(typeof module!=='undefined')module.exports={TYPES,COST,SHIP,TECH,techCost,DIFF,diffOf,EMP,SIZES,sizeOf,VICTORY,habitableCount,dominanceOf,STAR_KINDS,PLANET_TYPES,SYSTEMS,makeRng,adjOf,hops,route,
-  fleetSpeed,countTypes,has,planetsAt,capOf,incomeOf,vision,updateIntel,fogView,sightOf,newGame,applyOrders,previewOrders,settleChoice,resolveTurn,aiOrders,
+  fleetSpeed,countTypes,has,planetsAt,capOf,incomeOf,vision,updateIntel,fogView,sightOf,newGame,applyOrders,previewOrders,settleChoice,colonyOrder,resolveTurn,aiOrders,
   SAVE_FORMAT,SAVE_VERSION,SAVE_YAML,toSave,fromSave,checkSave};

@@ -737,6 +737,11 @@ function planetRow(p){
     <span class="what"><b>${esc(p.name)}</b><span>${PLANET_TYPES[p.type].name} · ${own}</span></span></button>`;
 }
 
+function colonyNote(f){
+  const o=f.target!=null?view.planets[f.target]:null;
+  if(!o||o.owner>=0)return o?`<span class="state">Fighters attacking ${esc(o.name)}; one colony ship will split off</span>`:'';
+  return countTypes(f).colony>1?`<span class="state">One colony ship is bound for ${esc(o.name)}; another will split off</span>`:`<span class="state">Its colony ship is bound for ${esc(o.name)}</span>`;
+}
 function siegeTurns(n,pop){const per=Math.ceil(n/2);return `${n} ${n===1?'fighter':'fighters'}: about ${Math.ceil(pop/per)} ${Math.ceil(pop/per)===1?'turn':'turns'} to capture`;}
 function planetCard(p){
   const cap=capOf(pv,p);
@@ -750,7 +755,7 @@ function planetCard(p){
   if(p.owner<0&&p.cap>0){
     for(const f of mine.filter(f=>has(f,'colony')))acts.push(f.target===p.id
       ?`<div class="row"><div class="what"><b>Fleet ${f.id} will settle here</b><span>${f.dest!=null?'On arrival':'At end of turn'}</span></div><button class="btn small" data-act="unaim" data-fleet="${f.id}">Clear</button></div>`
-      :`<div class="row"><div class="what"><span>Fleet ${f.id} · ${describe(f)}</span></div><button class="btn small primary" data-act="aim" data-fleet="${f.id}" data-planet="${p.id}">Colonise</button></div>`);
+      :`<div class="row"><div class="what"><span>Fleet ${f.id} · ${describe(f)}</span>${colonyNote(f)}</div><button class="btn small primary" data-act="colonise" data-fleet="${f.id}" data-planet="${p.id}">${colonyOrder(view,f.id,p.id).t==='target'&&f.target!=null&&f.target!==p.id?'Colonise instead':'Colonise'}</button></div>`);
     if(!acts.length)acts.push(`<p class="note">Send a fleet with a colony ship here to settle this planet.</p>`);
   }else if(p.owner>0){
     for(const f of mine.filter(f=>has(f,'fighter')))acts.push(f.target===p.id
@@ -845,6 +850,7 @@ $('sheetBody').addEventListener('click',e=>{
   if(act==='target'){const t={fleet:picking.fleet,counts:{...picking.counts}};if(mode==='system')exitSystem();targeting=t;picking=null;renderHud();renderSheet();return;}
   if(act==='hold'){const f=fleetById(fid);queue({t:'move',fleet:fid,to:f.at});}
   if(act==='aim')queue({t:'target',fleet:fid,planet:+b.dataset.planet});
+  if(act==='colonise')queue(colonyOrder(view,fid,+b.dataset.planet));
   if(act==='unaim')queue({t:'target',fleet:fid,planet:null});
   if(act==='merge')queue({t:'merge',star:sel});
   if(act==='build'&&avail()>=COST[type])queue({t:'build',star:sel,kind:type});
@@ -1026,7 +1032,7 @@ const TUT=[
   {text:()=>`Press <b>Enter system</b> to see the planets around ${esc(homeName())}. Tapping the star again does the same.`,done:()=>mode==='system'&&atHome(),target:()=>'[data-act="enter"]'},
   {text:()=>{const b=game.planets[tut.best],w=game.planets[tut.poor];return `Your colony ship can settle one planet here, and the choice matters. ${esc(w.name)} has habitability ${w.cap}; ${esc(b.name)} has ${b.cap}. Tap <b>${esc(b.name)}</b>, in the list or in the view.`;},
    done:()=>selPlanet===tut.best||colonyAimed(),target:()=>`.prow[data-planet="${tut.best}"]`},
-  {text:()=>`Press <b>Colonise</b>. Your colony ship settles ${esc(game.planets[tut.best].name)} when the turn ends.`,done:()=>colonyAimed(),target:()=>'[data-act="aim"]'},
+  {text:()=>`Press <b>Colonise</b>. Your colony ship settles ${esc(game.planets[tut.best].name)} when the turn ends.`,done:()=>colonyAimed(),target:()=>'[data-act="colonise"]'},
   {text:()=>`Press <b>End turn</b>. All orders run at once, and the rivals move too.`,done:()=>game.turn>tut.mark,target:()=>'#end'},
   {next:true,text:()=>`${esc(game.planets[tut.best].name)} is your colony now. It starts with 1 person and grows every other turn. Each person earns 1 industry (IU) a turn; your income shows at the top.`,target:()=>'#inc'},
   {text:()=>`Press <b>‹ Galaxy</b> to go back to the star map.`,done:()=>mode==='galaxy',target:()=>'[data-act="exit"]'},
