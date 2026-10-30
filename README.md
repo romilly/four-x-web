@@ -2,7 +2,9 @@
 
 A small turn-based space 4X in the browser, rendered with three.js.
 Explore a fogged star cluster, split and merge fleets, settle colonies,
-research, and out-fight two scripted rivals.
+research, and out-fight up to six scripted rivals.
+
+![A short demo: colonising a planet, sending a scout, then a large galaxy](docs/demo.gif)
 
 ## Play
 
@@ -41,16 +43,31 @@ migration from the previous version to `MIGRATIONS`.
 ## Layout
 
 - `core.js` — the pure game core (including `toSave` / `fromSave`): plain data in, plain data out, no DOM, no clock.
-  `newGame(seed, difficulty)`, `resolveTurn(state, orders, rng)`, `aiOrders(view, empire, rng)`,
+  `newGame(seed, difficulty, size, victory)`, `resolveTurn(state, orders, rng)`, `aiOrders(view, empire, rng)`,
   `fogView(state, empire)` and friends.
 - `index.html` — the three.js renderer and the interface, an adapter over the core.
 - `test/` — tests for the core.
+- `e2e/` — browser tests (Playwright), with `serve.js` serving the game locally.
+- `demo/` — the demo recorder.
 
 ## Test
 
 ```
 npm install
-npm test
+npm test          # the game core: rules, saves, galaxy sizes (node:test)
+npm run e2e       # the game in a real browser, desktop and phone sizes (Playwright)
 ```
 
-Needs Node 18 or later. The only dependency is `js-yaml`, used by the save tests (the page loads it from a CDN).
+Needs Node 18 or later. For the browser tests, install Playwright's Chromium once with
+`npx playwright install chromium`. The browser tests serve the game from this folder and answer its CDN
+libraries from `node_modules`, so they need no web server and no network. Both suites run on every push
+through GitHub Actions (`.github/workflows/test.yml`).
+
+## Demo
+
+```
+npm run demo
+```
+
+Plays a scripted opening and a large galaxy in a recorded browser, writing `demo-output/gabriels-reach.webm`
+(and an `.mp4` and `.gif` when `ffmpeg` is installed). `docs/demo.gif` at the top of this page was made this way.

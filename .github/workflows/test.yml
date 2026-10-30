@@ -1,0 +1,32 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Core tests
+        run: npm test
+      - name: Install the browser for Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Browser tests (desktop and phone)
+        run: npm run e2e
+      - name: Keep the test report when something fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14

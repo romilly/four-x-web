@@ -2,6 +2,15 @@
   "name": "four-x-web",
   "private": true,
   "description": "Gabriel's Reach, a small three.js space 4X",
-  "scripts": { "test": "node --test" },
-  "devDependencies": { "js-yaml": "4.1.0" }
+  "scripts": {
+    "test": "node --test test/",
+    "e2e": "playwright test",
+    "test:all": "node --test test/ && playwright test",
+    "demo": "node demo/record.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "js-yaml": "4.1.0",
+    "three": "0.128.0"
+  }
 }
