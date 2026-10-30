@@ -642,14 +642,22 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 
+// Taps on the map. Each pointer is tracked by id, and releases are heard on the whole window, so a drag that ends
+// over the orders panel or the top bar cannot leave a pointer counted as still pressed (which made every later tap
+// look like a two-finger gesture and be ignored).
 function bindPointer(canvas){
-  let down=null,multi=false,count=0;
-  canvas.addEventListener('pointerdown',e=>{count++;if(count>1)multi=true;if(count===1){down={x:e.clientX,y:e.clientY,t:performance.now()};multi=false;}});
+  const active=new Map();let multi=false;
+  canvas.addEventListener('pointerdown',e=>{
+    active.set(e.pointerId,{x:e.clientX,y:e.clientY,t:performance.now()});
+    multi=active.size>1;
+  });
   const up=e=>{
-    count=Math.max(0,count-1);
-    if(!down||multi){if(count===0)down=null;return;}
-    const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y),dt=performance.now()-down.t;down=null;
-    if(e.type!=='pointerup'||moved>9||dt>600)return;
+    const start=active.get(e.pointerId);if(!start)return;
+    active.delete(e.pointerId);
+    if(multi){if(!active.size)multi=false;return;}
+    if(e.type!=='pointerup'||e.target!==canvas)return;
+    const moved=Math.hypot(e.clientX-start.x,e.clientY-start.y),dt=performance.now()-start.t;
+    if(moved>9||dt>600)return;
     if(mode==='galaxy'){
       let best=-1,bd=36;
       game.stars.forEach((st,i)=>{const p=project(st.x,0,st.y);if(p.z>1)return;const d=Math.hypot(p.x-e.clientX,p.y-e.clientY);if(d<bd){bd=d;best=i;}});
@@ -660,7 +668,9 @@ function bindPointer(canvas){
       selPlanet=best;renderSheet();
     }
   };
-  canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
+  addEventListener('pointerup',up,true);addEventListener('pointercancel',up,true);
+  const reset=()=>{active.clear();multi=false;};
+  addEventListener('blur',reset);document.addEventListener('visibilitychange',reset);
 }
 
 // ---------- interaction ----------
