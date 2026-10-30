@@ -3,9 +3,9 @@
   "private": true,
   "description": "Gabriel's Reach, a small three.js space 4X",
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test \"test/*.test.js\"",
     "e2e": "playwright test",
-    "test:all": "node --test test/ && playwright test",
+    "test:all": "npm test && playwright test",
     "demo": "node demo/record.js"
   },
   "devDependencies": {
