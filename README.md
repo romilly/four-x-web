@@ -14,10 +14,23 @@ this repository; it loads three.js and js-yaml from CDNs, so it needs a connecti
 - Touch: drag to pan, pinch to zoom, drag with two fingers to rotate.
 - Mouse: drag to pan, scroll to zoom, right-drag or Shift-drag to rotate.
 
+## New games
+
+Under **?** → Game, choose a galaxy size and a victory condition, then tap a difficulty to start.
+
+| Size | Stars | Empires |
+|---|---|---|
+| Small | 28 | 3 |
+| Medium | 48 | 5 |
+| Large | 72 | 7 |
+
+- **Total victory:** be the last empire standing.
+- **Dominance:** hold 60% of all habitable planets, or be the last standing. A rival that reaches 60% first wins.
+
 ## Saved games
 
 Open the **?** panel and choose **Save as YAML** or **Load a save**. A save is a readable YAML file
-with a `format` name and a `version` (the save-format version). The game refuses files that are not
+with a `format` name and a `version` (the save-format version, currently 2; version-1 saves load as small galaxies). The game refuses files that are not
 saves, saves from a newer version, older formats it cannot migrate, and damaged files, and says why.
 Inside Claude the file is offered as `.yaml.txt`, because Claude only allows some download types;
 the contents are the same.

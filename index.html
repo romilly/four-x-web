@@ -191,6 +191,16 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
 @media (min-width:760px){body.targeting #banner,body.coaching #banner{bottom:calc(env(safe-area-inset-bottom,0px) + 24px)}}
 .coach-target{box-shadow:0 0 0 2px var(--gold),0 0 14px 3px rgba(242,181,68,.55)!important;animation:coachPulse 1.4s ease-in-out infinite}
 @keyframes coachPulse{50%{box-shadow:0 0 0 2px var(--gold),0 0 4px 1px rgba(242,181,68,.25)}}
+.stat .of{color:var(--dim);font-size:11px;margin-left:1px}
+.stat .sm{display:none}
+@media (max-width:430px){#hud{gap:8px 10px}.stat .lg,.stat .of{display:none}.stat .sm{display:inline}#techBtn{padding-inline:10px}}
+.pickrow{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.pl{font:500 10px var(--f-data);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.seg button{background:transparent;border:0;border-left:1px solid var(--rule);color:var(--ink);padding:7px 8px;font:600 13px var(--f-body);text-align:left;display:flex;flex-direction:column;gap:1px;min-width:0}
+.seg button:first-child{border-left:0}
+.seg button i{font:400 10.5px var(--f-data);font-style:normal;color:var(--dim);white-space:normal}
+.seg button[aria-checked="true"]{background:rgba(242,181,68,.14);color:var(--gold);box-shadow:inset 0 -2px 0 var(--gold)}
 .fail{position:fixed;inset:0;display:grid;place-items:center;text-align:center;color:var(--dim)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -203,7 +213,8 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
 <header id="hud">
   <div class="brand">Gabriel's Reach</div>
   <div class="stat"><small>Turn</small><span id="turn">1</span></div>
-  <div class="stat" title="Industry units available after queued orders"><small>Industry</small><span id="iu">0</span><span class="up" id="inc">+0</span></div>
+  <div class="stat" title="Industry units available after queued orders"><small><span class="lg">Industry</span><span class="sm">IU</span></small><span id="iu">0</span><span class="up" id="inc">+0</span></div>
+  <div class="stat" id="domStat" title="Your share of all habitable planets; 60% wins" hidden><small>Share</small><span id="dom">0%</span><span class="of">/60%</span></div>
   <button class="btn" id="techBtn">Research</button>
   <button class="btn icon" id="helpBtn" aria-label="How to play">?</button>
 </header>
@@ -249,7 +260,8 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
         <button class="btn primary" data-tut="start">Play the tutorial</button>
       </div>
       <ul>
-        <li>You lead the <b style="color:var(--gold)">Aurum Concord</b>. Two rivals, the <b style="color:var(--teal)">Veth Hegemony</b> and the <b style="color:var(--rose)">Ossari Choir</b>, share this cluster. An empire falls when it has no planets and no colony ships. Be the last one standing.</li>
+        <li>You lead the <b style="color:var(--gold)">Aurum Concord</b>. <span id="rivalList"></span> An empire falls when it has no planets and no colony ships.</li>
+        <li id="victoryLine"></li>
         <li>Each turn, give your orders, then press <b>End turn</b>. Everything happens at once: your orders, the rivals' orders, battles, sieges, growth.</li>
         <li><b>Industry (IU)</b> pays for everything. You earn 2 IU a turn plus 1 for every person on your planets. Unspent IU carries over.</li>
         <li><b>Fog of war:</b> you see one jump around your planets and fleets. Elsewhere the map shows what you last saw, which may be out of date.</li>
@@ -335,6 +347,13 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
     </div>
       <div class="newg">
       <h3>Start a new galaxy</h3>
+      <div class="pickrow"><span class="pl">Size</span><div class="seg" role="radiogroup" aria-label="Galaxy size" data-pick="size">
+        <button role="radio" data-val="small">Small<i>28 stars · 3 empires</i></button><button role="radio" data-val="medium">Medium<i>48 stars · 5 empires</i></button><button role="radio" data-val="large">Large<i>72 stars · 7 empires</i></button>
+      </div></div>
+      <div class="pickrow"><span class="pl">Victory</span><div class="seg" role="radiogroup" aria-label="Victory condition" data-pick="victory">
+        <button role="radio" data-val="total">Total<i>last empire standing</i></button><button role="radio" data-val="dominance">Dominance<i>hold 60% of habitable planets</i></button>
+      </div></div>
+      <div class="pl" style="margin:10px 0 6px">Difficulty: tap to start</div>
       <div class="diffs" data-confirm="1">
         <button class="btn" data-diff="easy">Easy</button><button class="btn" data-diff="normal">Normal</button><button class="btn" data-diff="hard">Hard</button>
       </div>
@@ -358,6 +377,7 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
     </div>
     <div class="newg">
       <h3>Play again</h3>
+      <p class="note" id="nextLine" style="margin:0 0 8px"></p>
       <div class="diffs"><button class="btn" data-diff="easy">Easy</button><button class="btn primary" data-diff="normal">Normal</button><button class="btn" data-diff="hard">Hard</button></div>
     </div>
   </div>
@@ -375,7 +395,7 @@ const SPECTRAL=[0x9db4ff,0xf4f1ff,0xffe2b0,0xffb47a,0xff8a6a];
 const PLANET_COLOR={terran:0x5fae7a,ocean:0x3f82d8,arid:0xcf9a5e,tundra:0xc4d6e4,toxic:0xa2be3c,barren:0x8b857b,gas:0xe0ae74};
 const PLANET_SIZE={terran:.85,ocean:.85,arid:.7,tundra:.7,toxic:.75,barren:.55,gas:1.4};
 const css=hex=>'#'+hex.toString(16).padStart(6,'0');
-let tut=null,tutArmed=false,game=null,view=null,pv=null,pending=[],sel=null,selPlanet=null,mode='galaxy',picking=null,targeting=null,newArmed=null;
+let rings=null,tut=null,tutArmed=false,game=null,view=null,pv=null,pending=[],sel=null,selPlanet=null,mode='galaxy',picking=null,targeting=null,newArmed=null;
 let renderer,scene,sysScene,sysLight,camera,controls,dyn,sysGroup,selRing,sysSel,galCam=null;
 let starObjs=[],labelEls=[],sysLabels=[],sysPlanets=[],spinners=[],sysSpinners=[];
 
@@ -434,7 +454,7 @@ function initScene(){
   const bg=new THREE.BufferGeometry();bg.setAttribute('position',new THREE.BufferAttribute(pos,3));
   const field=new THREE.PointsMaterial({color:0x7d88aa,size:1.4,sizeAttenuation:false});
   scene.add(new THREE.Points(bg,field));sysScene.add(new THREE.Points(bg,field));
-  for(const r of [15,30,45])scene.add(flatRing(r-0.06,r+0.06,0x1b2440,.5,128));
+  rings=new THREE.Group();scene.add(rings);
   buildStars();
   dyn=new THREE.Group();scene.add(dyn);
   selRing=flatRing(2.3,2.6,0xffffff,.85);selRing.visible=false;scene.add(selRing);
@@ -449,6 +469,8 @@ function initScene(){
 }
 
 function buildStars(){
+  if(rings){disposeGroup(rings);const R=sizeOf(game).radius;for(const r of [R/3,2*R/3,R])rings.add(flatRing(r-0.06,r+0.06,0x1b2440,.5,128));}
+  if(controls&&mode==='galaxy')controls.maxDistance=170*sizeOf(game).radius/46;
   for(const o of starObjs)scene.remove(o.group);
   labelEls.forEach(el=>el.remove());starObjs=[];labelEls=[];
   const sphere=new THREE.SphereGeometry(1,20,14);
@@ -584,7 +606,7 @@ function exitSystem(){
   if(mode!=='system')return;
   mode='galaxy';selPlanet=null;
   disposeGroup(sysGroup);sysLabels.forEach(el=>el.remove());sysLabels=[];sysPlanets=[];sysSpinners=[];
-  controls.minDistance=22;controls.maxDistance=170;
+  controls.minDistance=22;controls.maxDistance=170*sizeOf(game).radius/46;
   if(galCam){camera.position.copy(galCam.p);controls.target.copy(galCam.t);}
   controls.update();refresh();
 }
@@ -667,6 +689,8 @@ function renderHud(){
   $('turn').textContent=game.turn;
   $('iu').textContent=avail();
   $('inc').textContent='+'+incomeOf(view,0);
+  $('domStat').hidden=game.victory!=='dominance';
+  if(game.victory==='dominance')$('dom').textContent=Math.round(dominanceOf(game,0)*100)+'%';
   $('banner').hidden=!targeting;
   document.body.classList.toggle('targeting',!!targeting);
   $('undo').hidden=!pending.some(o=>o.t!=='build');
@@ -838,7 +862,8 @@ $('undo').onclick=()=>{
 $('end').onclick=()=>{
   if(game.over){showOver();return;}
   const rng=makeRng(game.rngState);
-  const orders={0:pending,1:aiOrders(sightOf(game,1),1,rng),2:aiOrders(sightOf(game,2),2,rng)};
+  const orders={0:pending};
+  for(const e of game.empires)if(e.id!==0&&e.alive)orders[e.id]=aiOrders(sightOf(game,e.id),e.id,rng);
   const{state}=resolveTurn(game,orders,rng);
   state.rngState=rng.state;
   game=state;pending=[];targeting=null;picking=null;
@@ -883,7 +908,13 @@ function openHelp(tab='basics'){
   document.querySelectorAll('#helpModal [data-diff]').forEach(b=>b.classList.remove('armed'));
   $('diffNote').textContent=DIFF_NOTE;
   $('loadConfirm').hidden=true;toLoad=null;
-  $('seedLine').textContent=`Galaxy ${game.seed} · ${diffOf(game).label} · turn ${game.turn}`;
+  $('seedLine').textContent=`Galaxy ${game.seed} · ${sizeOf(game).label} · ${VICTORY[game.victory].label} · ${diffOf(game).label} · turn ${game.turn}`;
+  const rv=game.empires.slice(1).map(e=>`<b style="color:${e.color}">${esc(e.name)}</b>`);
+  $('rivalList').innerHTML=`${rv.length===2?'Two':rv.length===4?'Four':rv.length===6?'Six':rv.length} rivals share this cluster: ${rv.slice(0,-1).join(', ')} and ${rv[rv.length-1]}.`;
+  $('victoryLine').innerHTML=game.victory==='dominance'
+    ?`<b>Dominance:</b> hold 60% of all habitable planets in the galaxy, or be the last empire standing. If a rival reaches 60% first, you lose. Your share shows at the top of the screen.`
+    :`<b>Total victory:</b> be the last empire standing.`;
+  renderPicks();
   $('helpModal').hidden=false;
 }
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{$(b.dataset.close).hidden=true;if(b.dataset.close==='helpModal')markHelp();coachUpdate();});
@@ -926,7 +957,7 @@ $('loadFile').onchange=async e=>{
   catch(err){saveNote(`${file.name} is not valid YAML${err.mark?` (line ${err.mark.line+1})`:''}.`);return;}
   try{toLoad=fromSave(data);}catch(err){saveNote(err.message);return;}
   const g=toLoad.game,mine=g.planets.filter(p=>p.owner===0).length;
-  $('loadSummary').textContent=`${file.name}: galaxy ${g.seed}, ${DIFF[g.difficulty].label}, turn ${g.turn}, ${mine} ${mine===1?'colony':'colonies'}. Loading replaces your current game.`;
+  $('loadSummary').textContent=`${file.name}: galaxy ${g.seed}, ${SIZES[g.size].label}, ${VICTORY[g.victory].label.toLowerCase()}, ${DIFF[g.difficulty].label}, turn ${g.turn}, ${mine} ${mine===1?'colony':'colonies'}. Loading replaces your current game.`;
   $('loadConfirm').hidden=false;saveNote('');
 };
 $('loadCancel').onclick=()=>{toLoad=null;$('loadConfirm').hidden=true;saveNote('Load cancelled. Your current game is unchanged.');};
@@ -938,18 +969,39 @@ $('loadGo').onclick=()=>{
   $('loadConfirm').hidden=true;$('helpModal').hidden=true;saveNote(`Loaded galaxy ${game.seed} at turn ${game.turn}.`);
 };
 
+// The size and victory chosen for the next new galaxy; remembered in this browser as a convenience.
+let nextSet={size:'small',victory:'total'};
+try{const v=JSON.parse(localStorage.getItem('gr-next-1')||'null');if(v&&SIZES[v.size]&&VICTORY[v.victory])nextSet=v;}catch(e){}
+function renderPicks(){
+  document.querySelectorAll('[data-pick]').forEach(g=>g.querySelectorAll('[data-val]').forEach(b=>b.setAttribute('aria-checked',String(b.dataset.val===nextSet[g.dataset.pick]))));
+  $('nextLine').textContent=`Next galaxy: ${SIZES[nextSet.size].label}, ${VICTORY[nextSet.victory].label.toLowerCase()}. Change this under ? → Game.`;
+}
+document.querySelectorAll('[data-pick] [data-val]').forEach(b=>b.onclick=()=>{
+  nextSet[b.closest('[data-pick]').dataset.pick]=b.dataset.val;
+  try{localStorage.setItem('gr-next-1',JSON.stringify(nextSet));}catch(e){}
+  renderPicks();
+});
 function startNew(d){
   tut=null;
   if(mode==='system')exitSystem();
-  game=newGame(Math.floor(Math.random()*900000)+100000,d);pending=[];sel=null;targeting=null;picking=null;
+  game=newGame(Math.floor(Math.random()*900000)+100000,d,nextSet.size,nextSet.victory);pending=[];sel=null;targeting=null;picking=null;
   buildStars();centerOn(game.stars[game.empires[0].home],true);refresh();
 }
 function showOver(){
   const o=game.over;
-  $('overH').textContent=o.win?'The Reach is yours':'The Concord has fallen';
-  const left=game.empires.filter(e=>e.alive&&e.id!==0).map(e=>e.name).join(' and ');
-  $('overText').textContent=o.win?`Every rival was broken by turn ${o.turn} on ${diffOf(game).label}. Galaxy ${game.seed} can be replayed from its seed.`:
-    `Your last colony fell on turn ${o.turn}. ${left} ${left.includes(' and ')?'hold':'holds'} the cluster.`;
+  const left=game.empires.filter(e=>e.alive&&e.id!==0).map(e=>e.name);
+  const list=left.length>1?left.slice(0,-1).join(', ')+' and '+left[left.length-1]:left[0];
+  const where=`${sizeOf(game).label.toLowerCase()} galaxy on ${diffOf(game).label}`;
+  if(o.how==='dominance'){
+    $('overH').textContent=o.win?'The Reach is yours':`The ${game.empires[o.by].name} dominates`;
+    $('overText').textContent=o.win?`You held 60% of the habitable planets by turn ${o.turn}, in a ${where}. Galaxy ${game.seed} can be replayed from its seed.`:
+      `The ${game.empires[o.by].name} held 60% of the habitable planets on turn ${o.turn}, before you could.`;
+  }else{
+    $('overH').textContent=o.win?'The Reach is yours':'The Concord has fallen';
+    $('overText').textContent=o.win?`Every rival was broken by turn ${o.turn}, in a ${where}. Galaxy ${game.seed} can be replayed from its seed.`:
+      `Your last colony fell on turn ${o.turn}. ${list} ${left.length>1?'hold':'holds'} the cluster.`;
+  }
+  renderPicks();
   $('overModal').hidden=false;
 }
 addEventListener('keydown',e=>{
@@ -987,7 +1039,7 @@ const TUT=[
   {text:()=>`Open <b>Research</b> at the top to see what you can improve. Research costs 40 IU and up, so you will need to save for it.`,done:()=>!!tut.sawTech,target:()=>'#techBtn'},
   {text:()=>$('techModal').hidden?`Press <b>End turn</b> to launch the fighter and move the scout.`:`Close Research with <b>Done</b>, then press <b>End turn</b>.`,
    done:()=>game.turn>tut.mark,target:()=>$('techModal').hidden?'#end':'#techModal [data-close]'},
-  {next:true,text:()=>`Later, your scout will find rival planets: teal or rose dots on the map. Gather fighters, send them there, enter the system, tap the enemy planet and press <b>Attack</b>. The <b>?</b> panel explains combat in detail.`,target:()=>'#helpBtn'},
+  {next:true,text:()=>`Later, your scout will find rival planets: dots in a rival's colour on the map. Gather fighters, send them there, enter the system, tap the enemy planet and press <b>Attack</b>. The <b>?</b> panel explains combat in detail.`,target:()=>'#helpBtn'},
   {next:true,text:()=>`That's the basics. Keep playing this galaxy, or start a new one from <b>?</b> → Game. Good luck, commander.`}
 ];
 const colonyAimed=()=>view.fleets.some(f=>f.owner===0&&f.target===tut.best)||game.planets[tut.best].owner===0;
@@ -1029,7 +1081,7 @@ document.querySelectorAll('[data-tut="start"]').forEach(b=>b.onclick=()=>{
 // ---------- boot ----------
 function start(data){
   const saved=valid(data)?data:load();
-  if(saved){game=saved.game;pending=saved.pending||[];}else game=newGame(Math.floor(Math.random()*900000)+100000);
+  if(saved){game=saved.game;pending=saved.pending||[];game.size??='small';game.victory??='total';}else game=newGame(Math.floor(Math.random()*900000)+100000);
   tut=valid(data)?data.tut||null:loadTut();
   view=previewOrders(game,0,pending);pv=fogView(view,0);
   try{initScene();}catch(err){document.body.insertAdjacentHTML('beforeend','<div class="fail"><p>This device could not start WebGL, which the star chart needs.</p></div>');return;}
