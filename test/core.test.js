@@ -222,3 +222,46 @@ test('a fleet with one colony ship already aimed at a free planet is re-aimed, n
   const v = g.previewOrders(s, 0, [{ t: 'target', fleet: f.id, planet: a }]);
   assert.deepEqual(g.colonyOrder(v, f.id, b), { t: 'target', fleet: f.id, planet: b });
 });
+
+// ---------- shipyard capacity ----------
+test('a system launches 1 ship a turn, plus 1 for every 4 people on your planets there', () => {
+  const s = g.newGame(33), h = s.empires[0].home, home = s.planets.find(p => p.owner === 0);
+  home.pop = 3; assert.equal(g.shipyardCapacity(s, 0, h), 1);
+  home.pop = 4; assert.equal(g.shipyardCapacity(s, 0, h), 2);
+  const other = g.planetsAt(s, h).find(p => p.owner < 0 && p.cap > 0);
+  other.owner = 0; other.pop = 4; assert.equal(g.shipyardCapacity(s, 0, h), 3);
+  assert.equal(g.shipyardCapacity(s, 0, s.empires[1].home), 0, 'no shipyard where you hold no planet');
+});
+
+test('builds beyond a system\'s capacity are refused and cost nothing', () => {
+  const s = g.newGame(33), h = s.empires[0].home;
+  s.empires[0].credits = 100;
+  const r = g.resolveTurn(s, { 0: [1, 2, 3].map(() => ({ t: 'build', star: h, kind: 'fighter' })) }, g.makeRng(1)).state;
+  const fighters = r.fleets.filter(f => f.owner === 0).reduce((n, f) => n + g.countTypes(f).fighter, 0);
+  assert.equal(fighters, 2 + 1, 'started with 2, capacity 1');
+  assert.equal(r.empires[0].credits, 100 - 15 + g.incomeOf(r, 0));
+});
+
+test('each system has its own capacity', () => {
+  const s = g.newGame(33), h = s.empires[0].home, other = g.adjOf(s)[h].find(j => g.planetsAt(s, j).length);
+  const p = g.planetsAt(s, other)[0]; p.owner = 0; p.pop = 1;
+  s.empires[0].credits = 100;
+  const o = [h, h, other, other].map(star => ({ t: 'build', star, kind: 'scout' }));
+  const r = g.resolveTurn(s, { 0: o }, g.makeRng(1)).state;
+  const scouts = r.fleets.filter(f => f.owner === 0).reduce((n, f) => n + g.countTypes(f).scout, 0);
+  assert.equal(scouts, 1 + 2, 'started with 1, one more from each system');
+});
+
+test('rivals respect shipyard capacity too', () => {
+  let s = g.newGame(7, 'hard'); const rng = g.makeRng(s.rngState);
+  for (let t = 0; t < 30; t++) {
+    const orders = {};
+    for (const e of s.empires) if (e.id) orders[e.id] = g.aiOrders(g.sightOf(s, e.id), e.id, rng);
+    for (const [e, os] of Object.entries(orders)) {
+      const per = {};
+      for (const o of os) if (o.t === 'build') per[o.star] = (per[o.star] || 0) + 1;
+      for (const [star, n] of Object.entries(per)) assert.ok(n <= g.shipyardCapacity(s, +e, +star), `turn ${s.turn}: empire ${e} ordered ${n} at ${star}`);
+    }
+    s = g.resolveTurn(s, orders, rng).state;
+  }
+});

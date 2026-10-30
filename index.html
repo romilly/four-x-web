@@ -191,6 +191,10 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
 @media (min-width:760px){body.targeting #banner,body.coaching #banner{bottom:calc(env(safe-area-inset-bottom,0px) + 24px)}}
 .coach-target{box-shadow:0 0 0 2px var(--gold),0 0 14px 3px rgba(242,181,68,.55)!important;animation:coachPulse 1.4s ease-in-out infinite}
 @keyframes coachPulse{50%{box-shadow:0 0 0 2px var(--gold),0 0 4px 1px rgba(242,181,68,.25)}}
+.slots{display:flex;align-items:center;gap:4px;margin:-2px 0 8px;font-size:12.5px;color:var(--dim)}
+.slots b{color:var(--ink);font-weight:600;margin:0 6px 0 4px;font-variant-numeric:tabular-nums}
+.slots i{width:12px;height:6px;border-radius:1px;background:var(--rule)}
+.slots i.on{background:var(--gold)}
 .stat .of{color:var(--dim);font-size:11px;margin-left:1px}
 .stat .sm{display:none}
 @media (max-width:430px){#hud{gap:8px 10px}.stat .lg,.stat .of{display:none}.stat .sm{display:inline}#techBtn{padding-inline:10px}}
@@ -279,6 +283,7 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
         <li><b>Send…</b> on a fleet: choose how many of each ship, press <b>Choose destination</b>, tap a star. The ships you chose split off as a new fleet; the rest stay.</li>
         <li><b>Merge</b> joins fleets parked at the same star. <b>Hold</b> cancels a move. <b>Undo</b> removes your last order.</li>
         <li>Build ships in the <b>Shipyard</b> of any star where you hold a planet. New ships join a parked fleet there at the end of the turn and can move the turn after.</li>
+        <li><b>Shipyard capacity:</b> each system launches at most 1 ship a turn, plus 1 for every 4 people on your planets there. A homeworld of 3 launches 1 a turn; at 8 people it launches 3. A newly captured planet launches only 1, so big fleets come from your populous core and have to travel to the front. Rivals follow the same rule.</li>
       </ul>
     </div>
     <div class="tabp" data-panel="planets" hidden>
@@ -296,7 +301,7 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
       <ul>
         <li><b>Habitability</b> is the most people a planet can hold. 0 means nobody can live there. Terraforming raises it.</li>
         <li><b>To colonise</b>, get a fleet with a colony ship into the system or on its way there, tap a free planet and press <b>Colonise</b>. Colony ships never settle on their own.</li>
-        <li>Colonies grow by 1 person every other turn up to their habitability. Each person earns 1 IU a turn.</li>
+        <li>Colonies grow by 1 person every other turn up to their habitability. Each person earns 1 IU a turn, and every 4 people in a system let its shipyard launch one more ship a turn.</li>
         <li>On the map, each star shows a dot per planet: an empire's colour if owned, <b>white</b> if free and habitable, dim if nobody can live there.</li>
         <li>Rivals can hold planets in the same system as you.</li>
       </ul>
@@ -819,9 +824,12 @@ function renderSheet(){
       }
     }
     if(ownsAt(st.id,0)){
-      h+=`<div class="sec"><h3>Shipyard · ${avail()} IU free${info('fleets')}</h3><div class="builds">`;
-      for(const t of TYPES)h+=`<button class="btn" data-act="build" data-type="${t}" ${avail()<COST[t]?'disabled':''}>${SHIP[t][0]}<i>${COST[t]} IU</i></button>`;
-      h+=`</div><p class="note" style="margin-top:6px">New ships join a parked fleet here at the end of the turn.</p>`;
+      const cap=shipyardCapacity(game,0,st.id),used=pending.filter(o=>o.t==='build'&&o.star===st.id).length,full=used>=cap;
+      h+=`<div class="sec"><h3>Shipyard · ${avail()} IU free${info('fleets')}</h3>
+        <div class="slots" title="Ships this system can launch each turn: 1, plus 1 for every 4 people on your planets here">Launches this turn <b>${used} of ${cap}</b>${Array.from({length:cap},(_,i)=>`<i class="${i<used?'on':''}"></i>`).join('')}</div><div class="builds">`;
+      for(const t of TYPES)h+=`<button class="btn" data-act="build" data-type="${t}" ${avail()<COST[t]||full?'disabled':''}>${SHIP[t][0]}<i>${COST[t]} IU</i></button>`;
+      const people=planetsAt(game,st.id).reduce((n,p)=>n+(p.owner===0?p.pop:0),0),toNext=4-people%4;
+      h+=`</div><p class="note" style="margin-top:6px">${full?`This shipyard is full for this turn. Build at another of your systems, or wait a turn. `:''}New ships join a parked fleet here at the end of the turn. ${toNext} more ${toNext===1?'person':'people'} here would add a launch.</p>`;
       const freeHere=planetsAt(pv,st.id).filter(p=>p.owner<0&&p.cap>0);
       if(freeHere.length&&!view.fleets.some(f=>f.owner===0&&has(f,'colony')&&(f.at===st.id||f.dest===st.id)))
         h+=`<p class="hint">${freeHere.length} free habitable ${freeHere.length===1?'planet':'planets'} in this system. A colony ship (25 IU) can settle one.</p>`;
@@ -863,7 +871,7 @@ $('sheetBody').addEventListener('click',e=>{
   if(act==='colonise')queue(colonyOrder(view,fid,+b.dataset.planet));
   if(act==='unaim')queue({t:'target',fleet:fid,planet:null});
   if(act==='merge')queue({t:'merge',star:sel});
-  if(act==='build'&&avail()>=COST[type])queue({t:'build',star:sel,kind:type});
+  if(act==='build'&&avail()>=COST[type]&&pending.filter(o=>o.t==='build'&&o.star===sel).length<shipyardCapacity(game,0,sel))queue({t:'build',star:sel,kind:type});
   if(act==='unbuild')pending.splice(+b.dataset.i,1);
   if(act==='deselect'){sel=null;picking=null;}
   refresh();
@@ -1050,7 +1058,7 @@ const TUT=[
   {text:()=>`Send only the scout: press <b>−</b> until Fighters shows 0, leaving the scout. Then press <b>Choose destination</b>.`,done:()=>targeting!=null||scoutSent(),
    target:()=>{const d=[...document.querySelectorAll('[data-act="dec"][data-type="fighter"]:not([disabled])')];return d[0]||'[data-act="target"]';}},
   {text:()=>`Now tap a star for the scout to fly to. Stars marked <b>?</b> are uncharted: drag the map to find one, or pick any star. A star is charted when one of your fleets comes within one jump of it.`,done:()=>scoutSent()},
-  {text:()=>`Build a fighter. ${tapHomeFirst()} <b>Fighter</b> in the Shipyard. It costs 15 IU and joins a fleet at the end of the turn.`,
+  {text:()=>`Build a fighter. ${tapHomeFirst()} <b>Fighter</b> in the Shipyard. It costs 15 IU and joins a fleet at the end of the turn. Each system can launch only a few ships a turn: the bar above the buttons shows how many.`,
    done:()=>pending.some(o=>o.t==='build'&&o.kind==='fighter'),target:()=>atHome()?'[data-act="build"][data-type="fighter"]':labelEls[homeId()]},
   {text:()=>`Open <b>Research</b> at the top to see what you can improve. Research costs 40 IU and up, so you will need to save for it.`,done:()=>!!tut.sawTech,target:()=>'#techBtn'},
   {text:()=>$('techModal').hidden?`Press <b>End turn</b> to launch the fighter and move the scout.`:`Close Research with <b>Done</b>, then press <b>End turn</b>.`,

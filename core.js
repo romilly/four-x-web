@@ -87,6 +87,12 @@ const countTypes=f=>{const c={fighter:0,colony:0,scout:0};for(const x of f.ships
 const has=(f,t)=>f.ships.some(x=>x.type===t);
 const planetsAt=(s,star)=>s.planets.filter(p=>p.star===star);
 const capOf=(s,p)=>p.cap>0?p.cap+(p.owner>=0?s.empires[p.owner].tech.terraform:0):0;
+// Ships a system can launch for an empire each turn: 1, plus 1 for every 4 people on that empire's planets there; 0 without a planet.
+function shipyardCapacity(s,e,star){
+  let held=false,pop=0;
+  for(const p of s.planets)if(p.star===star&&p.owner===e){held=true;pop+=p.pop;}
+  return held?1+Math.floor(pop/4):0;
+}
 const incomeOf=(s,e)=>{const base=2+s.planets.reduce((a,p)=>a+(p.owner===e?p.pop:0),0);return e===0?base:Math.round(base*diffOf(s).income);};
 
 // Sensor range: every star where the empire holds a planet or has a fleet, plus the stars one jump away.
@@ -219,10 +225,12 @@ function applyOrders(s,e,orders,say,withBuilds){
     }
   }
   if(!withBuilds)return;
+  const launched={};
   for(const o of orders){
     if(o.t!=='build')continue;
     const st=s.stars[o.star],c=COST[o.kind];
-    if(!st||!s.planets.some(p=>p.star===o.star&&p.owner===e)||!c||emp.credits<c)continue;
+    if(!st||!c||emp.credits<c||(launched[o.star]||0)>=shipyardCapacity(s,e,o.star))continue;
+    launched[o.star]=(launched[o.star]||0)+1;
     emp.credits-=c;
     let f=s.fleets.find(f=>f.owner===e&&f.at===o.star&&f.dest==null);
     if(!f){f={id:s.nextFleet++,owner:e,at:o.star,dest:null,target:null,ships:[]};s.fleets.push(f);}
@@ -390,13 +398,16 @@ function aiOrders(s,e,rng){
       claimed.add(best.id);out.push({t:'split',fleet:f.id,ships:{colony:1},to:best.star,target:best.id});
     }
   }
+  // Shipyards: every system it holds, most populous first, each with its own launch capacity.
   const popAt={};for(const p of mine)popAt[p.star]=(popAt[p.star]||0)+p.pop;
-  const yard=Object.keys(popAt).map(Number).sort((a,b)=>popAt[b]-popAt[a]||a-b)[0];
-  if(yard!=null){
+  const yards=Object.keys(popAt).map(Number).sort((a,b)=>popAt[b]-popAt[a]||a-b);
+  const room={};for(const y of yards)room[y]=shipyardCapacity(s,e,y);
+  const build=kind=>{const y=yards.find(y=>room[y]>0);if(y==null)return false;room[y]--;out.push({t:'build',star:y,kind});cash-=COST[kind];return true;};
+  if(yards.length){
     const open=free.filter(p=>!claimed.has(p.id)).length;
-    if(open>0&&colonyShips<2&&cash>=COST.colony){out.push({t:'build',star:yard,kind:'colony'});cash-=COST.colony;}
+    if(open>0&&colonyShips<2&&cash>=COST.colony)build('colony');
     const reserve=s.turn>6&&nextTech?Math.min(techCost(emp.tech[nextTech]),60):0;
-    for(let k=0;k<diffOf(s).builds&&cash-COST.fighter>=reserve;k++){out.push({t:'build',star:yard,kind:'fighter'});cash-=COST.fighter;}
+    for(let k=0;k<diffOf(s).builds&&cash-COST.fighter>=reserve;k++)if(!build('fighter'))break;
   }
   const targets=v.planets.filter(p=>p.owner>=0&&p.owner!==e);
   if(s.turn>=diffOf(s).attackTurn&&targets.length){
@@ -490,5 +501,5 @@ function checkSave(g,orders){
 }
 // CORE-END
 if(typeof module!=='undefined')module.exports={TYPES,COST,SHIP,TECH,techCost,DIFF,diffOf,EMP,SIZES,sizeOf,VICTORY,habitableCount,dominanceOf,STAR_KINDS,PLANET_TYPES,SYSTEMS,makeRng,adjOf,hops,route,
-  fleetSpeed,countTypes,has,planetsAt,capOf,incomeOf,vision,updateIntel,fogView,sightOf,newGame,applyOrders,previewOrders,settleChoice,colonyOrder,resolveTurn,aiOrders,
+  fleetSpeed,countTypes,has,planetsAt,capOf,shipyardCapacity,incomeOf,vision,updateIntel,fogView,sightOf,newGame,applyOrders,previewOrders,settleChoice,colonyOrder,resolveTurn,aiOrders,
   SAVE_FORMAT,SAVE_VERSION,SAVE_YAML,toSave,fromSave,checkSave};
