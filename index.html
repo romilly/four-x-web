@@ -379,11 +379,7 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
     <p class="note" id="overText" style="margin-top:10px"></p>
     <div class="acts">
       <button class="btn" data-close="overModal">View the map</button>
-    </div>
-    <div class="newg">
-      <h3>Play again</h3>
-      <p class="note" id="nextLine" style="margin:0 0 8px"></p>
-      <div class="diffs"><button class="btn" data-diff="easy">Easy</button><button class="btn primary" data-diff="normal">Normal</button><button class="btn" data-diff="hard">Hard</button></div>
+      <button class="btn primary" id="overNew">New game…</button>
     </div>
   </div>
 </div>
@@ -950,7 +946,7 @@ document.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{
     $('diffNote').textContent=`Tap ${DIFF[d].label} again to abandon this galaxy and start a new one.`;
     return;
   }
-  startNew(d);$('helpModal').hidden=true;$('overModal').hidden=true;
+  startNew(d);$('helpModal').hidden=true;
 });
 // ---------- saved games as YAML ----------
 // Inside Claude the viewer only offers some file types, so the YAML goes out as .yaml.txt there; elsewhere it is a plain .yaml download.
@@ -998,7 +994,6 @@ let nextSet={size:'small',victory:'total'};
 try{const v=JSON.parse(localStorage.getItem('gr-next-1')||'null');if(v&&SIZES[v.size]&&VICTORY[v.victory])nextSet=v;}catch(e){}
 function renderPicks(){
   document.querySelectorAll('[data-pick]').forEach(g=>g.querySelectorAll('[data-val]').forEach(b=>b.setAttribute('aria-checked',String(b.dataset.val===nextSet[g.dataset.pick]))));
-  $('nextLine').textContent=`Next galaxy: ${SIZES[nextSet.size].label}, ${VICTORY[nextSet.victory].label.toLowerCase()}. Change this under ? → Game.`;
 }
 document.querySelectorAll('[data-pick] [data-val]').forEach(b=>b.onclick=()=>{
   nextSet[b.closest('[data-pick]').dataset.pick]=b.dataset.val;
@@ -1025,9 +1020,10 @@ function showOver(){
     $('overText').textContent=o.win?`Every rival was broken by turn ${o.turn}, in a ${where}. Galaxy ${game.seed} can be replayed from its seed.`:
       `Your last colony fell on turn ${o.turn}. ${list} ${left.length>1?'hold':'holds'} the cluster.`;
   }
-  renderPicks();
   $('overModal').hidden=false;
 }
+// New game… goes to the Game tab, where size, victory and difficulty are chosen together.
+$('overNew').onclick=()=>{$('overModal').hidden=true;openHelp('game');};
 addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
   if(targeting){targeting=null;renderHud();}
