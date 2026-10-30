@@ -15,7 +15,21 @@ const DIFF={
   hard:{label:'Hard',fog:false,attackTurn:6,builds:3,income:1.25}
 };
 const diffOf=s=>DIFF[s.difficulty]||DIFF.normal;
-const EMP=[{name:'Aurum Concord',color:'#f2b544'},{name:'Veth Hegemony',color:'#4fd1c5'},{name:'Ossari Choir',color:'#ef6f8a'}];
+// You are always empire 0. Small galaxies use the first three, medium the first five, large all seven.
+const EMP=[{name:'Aurum Concord',color:'#f2b544'},{name:'Veth Hegemony',color:'#4fd1c5'},{name:'Ossari Choir',color:'#ef6f8a'},
+  {name:'Kesh Dominion',color:'#a58cff'},{name:'Morrow League',color:'#7ccf6a'},{name:'Thal Assembly',color:'#5aa7ff'},{name:'Iridane Pact',color:'#ff8f4a'}];
+// Stars per empire stays about the same, so openings feel alike; the radius grows with the square root of the star count.
+const SIZES={
+  small:{label:'Small',stars:28,radius:46,empires:3},
+  medium:{label:'Medium',stars:48,radius:60,empires:5},
+  large:{label:'Large',stars:72,radius:74,empires:7}
+};
+const sizeOf=s=>SIZES[s.size]||SIZES.small;
+// Total: be the last empire standing. Dominance: hold this share of all habitable planets (or be the last standing).
+const VICTORY={total:{label:'Total victory'},dominance:{label:'Dominance',share:0.6}};
+const habitableCount=s=>s.planets.reduce((n,p)=>n+(p.cap>0?1:0),0);
+const dominanceOf=(s,e)=>s.planets.reduce((n,p)=>n+(p.owner===e&&p.cap>0?1:0),0)/Math.max(1,habitableCount(s));
+const EXTRA_NAMES=['Acamar','Adhara','Alcyone','Aldhibah','Alrescha','Alsephina','Ankaa','Arneb','Aspidiske','Atria','Azha','Baham','Beid','Botein','Castula','Cebalrai','Chara','Cursa','Dalim','Deneb','Edasich','Electra','Fulu','Gomeisa','Grumium','Heze','Homam','Jishui','Kraz','Lucida','Maasym','Matar','Menkar','Merak','Mirach','Muphrid','Nekkar','Nusakan','Peacock','Pherkad','Pleione','Rotanev','Ruchbah','Sabik','Sargas','Sheliak','Situla','Talitha','Tarazed','Wasat'];
 const NAMES=['Achird','Brisa','Caph','Diadem','Elnath','Fawaris','Gienah','Hadar','Izar','Jabbah','Kochab','Lesath','Markab','Nashira','Okab','Phact',
   'Rasalas','Sadr','Tejat','Unuk','Vega','Wezen','Xamidimura','Yed','Zaniah','Alkes','Biham','Celaeno','Dabih','Errai','Furud','Hamal'];
 
@@ -113,15 +127,21 @@ function rollPlanets(rng,st){
   return out;
 }
 
-function newGame(seed,difficulty='normal'){
-  const rng=makeRng(seed),N=28,R=46,stars=[];
-  for(let tries=0;stars.length<N&&tries<6000;tries++){
+function newGame(seed,difficulty='normal',size='small',victory='total'){
+  if(!SIZES[size])size='small';if(!VICTORY[victory])victory='total';
+  const Z=SIZES[size],rng=makeRng(seed),N=Z.stars,R=Z.radius,stars=[];
+  for(let tries=0;stars.length<N&&tries<6000*N/28;tries++){
     const ang=rng.next()*Math.PI*2,r=Math.sqrt(rng.next())*R;
     const x=Math.cos(ang)*r,y=Math.sin(ang)*r*0.78;
     if(stars.every(s=>Math.hypot(s.x-x,s.y-y)>9.5))stars.push({id:stars.length,x,y});
   }
   const names=NAMES.slice();
   for(let i=names.length-1;i>0;i--){const j=rng.int(i+1);[names[i],names[j]]=[names[j],names[i]];}
+  if(N>names.length){// larger galaxies draw more names; small ones use the random stream exactly as before
+    const extra=EXTRA_NAMES.slice();
+    for(let i=extra.length-1;i>0;i--){const j=rng.int(i+1);[extra[i],extra[j]]=[extra[j],extra[i]];}
+    names.push(...extra);
+  }
   for(const st of stars){st.name=names[st.id];st.kind=rng.int(5);}
   // Hyperlanes: the Gabriel graph — a lane joins two stars when no third star sits inside the circle they span.
   const n=stars.length,d2=(i,j)=>(stars[i].x-stars[j].x)**2+(stars[i].y-stars[j].y)**2,lanes=[];
@@ -131,13 +151,14 @@ function newGame(seed,difficulty='normal'){
     if(ok)lanes.push([i,j]);
   }
   const D=(a,b)=>Math.sqrt(d2(a,b)),argmax=f=>{let b=0,bv=-Infinity;for(let i=0;i<n;i++){const v=f(i);if(v>bv){bv=v;b=i;}}return b;};
+  // Homeworlds as far apart as possible: start from two extreme stars, then keep adding the star farthest from every home so far.
   let h0=rng.int(n);const h1=argmax(i=>D(h0,i));h0=argmax(i=>D(h1,i));
-  const h2=argmax(i=>Math.min(D(h0,i),D(h1,i)));
-  const homes=[h0,h1,h2];
+  const homes=[h0,h1];
+  while(homes.length<Z.empires)homes.push(argmax(i=>homes.includes(i)?-1:Math.min(...homes.map(h=>D(h,i)))));
   for(const h of homes)stars[h].kind=2;
   const bySystem=stars.map(st=>rollPlanets(rng,st));
-  const s={seed,difficulty:DIFF[difficulty]?difficulty:'normal',turn:1,rngState:0,stars,lanes,planets:[],fleets:[],nextFleet:1,nextShip:1,events:[],over:null,
-    empires:EMP.map((e,i)=>({id:i,name:e.name,color:e.color,credits:20,tech:{weapons:0,drives:0,terraform:0},alive:true,home:homes[i]}))};
+  const s={seed,difficulty:DIFF[difficulty]?difficulty:'normal',size,victory,turn:1,rngState:0,stars,lanes,planets:[],fleets:[],nextFleet:1,nextShip:1,events:[],over:null,
+    empires:EMP.slice(0,Z.empires).map((e,i)=>({id:i,name:e.name,color:e.color,credits:20,tech:{weapons:0,drives:0,terraform:0},alive:true,home:homes[i]}))};
   const adj=adjOf(s);
   homes.forEach((h,i)=>{
     // Every homeworld is a rich terran planet, and a habitable free planet waits within one jump.
@@ -304,8 +325,15 @@ function resolveTurn(state,ordersBy,rng){
     if(!alive){emp.alive=false;s.fleets=s.fleets.filter(f=>f.owner!==emp.id);say(emp.id===0?'Your empire has fallen.':`The ${emp.name} has fallen.`,'fall');}
   }
   const left=s.empires.filter(e=>e.alive);
-  if(!s.empires[0].alive)s.over={win:false,turn:s.turn};
-  else if(left.length===1)s.over={win:true,turn:s.turn};
+  if(!s.empires[0].alive)s.over={win:false,turn:s.turn,how:'total'};
+  else if(left.length===1)s.over={win:true,turn:s.turn,how:'total'};
+  else if(s.victory==='dominance'){
+    const need=VICTORY.dominance.share,top=left.map(e=>[e.id,dominanceOf(s,e.id)]).sort((a,b)=>b[1]-a[1]||a[0]-b[0])[0];
+    if(top[1]>=need){
+      s.over={win:top[0]===0,turn:s.turn,how:'dominance',by:top[0]};
+      say(top[0]===0?`You hold ${Math.round(top[1]*100)}% of the habitable planets. The Reach is yours.`:`The ${s.empires[top[0]].name} holds ${Math.round(top[1]*100)}% of the habitable planets and dominates the Reach.`,'fall');
+    }
+  }
   // 7. Targets that no longer make sense are dropped
   for(const f of s.fleets){
     if(f.target==null)continue;
@@ -390,12 +418,16 @@ function aiOrders(s,e,rng){
 // A save is plain data: a format name, a version and the whole game state, plus any orders queued but not yet run.
 // Bump SAVE_VERSION whenever the shape of the state changes, and add a migration from the old version if one is possible.
 const SAVE_FORMAT='gabriels-reach-save';
-const SAVE_VERSION=1;
-const MIGRATIONS={};// version n -> function turning a version-n save into a version n+1 save
+const SAVE_VERSION=2;
+// version n -> function turning a version-n save into a version n+1 save
+const MIGRATIONS={
+  // 1 -> 2: galaxy size and victory condition were added; every version-1 game was a small galaxy played to total victory.
+  1:d=>({...d,version:2,size:'small',victory:'total',game:{...d.game,size:'small',victory:'total'}})
+};
 const SAVE_YAML={flowLevel:3,lineWidth:-1,noRefs:true};// js-yaml options: one line per star, planet, fleet and lane
 const ORDER_TYPES=['research','move','split','target','merge','build'];
 function toSave(game,orders=[]){
-  return {format:SAVE_FORMAT,version:SAVE_VERSION,galaxy:game.seed,difficulty:game.difficulty,turn:game.turn,orders,game};
+  return {format:SAVE_FORMAT,version:SAVE_VERSION,galaxy:game.seed,size:game.size,victory:game.victory,difficulty:game.difficulty,turn:game.turn,orders,game};
 }
 // Returns {game,orders} or throws an Error whose message can be shown to the player as it is.
 function fromSave(d){
@@ -417,16 +449,19 @@ function checkSave(g,orders){
   if(!obj(g))return 'the game section is missing';
   if(!int(g.seed)||!int(g.turn)||g.turn<1||!int(g.rngState))return 'the galaxy number, turn or random state is not a whole number';
   if(!DIFF[g.difficulty])return `the difficulty "${g.difficulty}" is unknown`;
+  if(!SIZES[g.size])return `the galaxy size "${g.size}" is unknown`;
+  if(!VICTORY[g.victory])return `the victory condition "${g.victory}" is unknown`;
+  const E=SIZES[g.size].empires;
   const S=arr(g.stars)?g.stars.length:0;
   if(S<2||!g.stars.every((st,i)=>obj(st)&&st.id===i&&num(st.x)&&num(st.y)&&typeof st.name==='string'&&int(st.kind)&&st.kind>=0&&st.kind<STAR_KINDS.length))return 'a star entry is invalid';
   const star=i=>int(i)&&i>=0&&i<S;
   if(!arr(g.lanes)||!g.lanes.every(l=>arr(l)&&l.length===2&&star(l[0])&&star(l[1])))return 'a lane joins stars that do not exist';
-  if(!arr(g.empires)||g.empires.length!==EMP.length)return `there should be ${EMP.length} empires`;
+  if(!arr(g.empires)||g.empires.length!==E)return `there should be ${E} empires in a ${g.size} galaxy`;
   for(const [i,e] of g.empires.entries()){
     if(!obj(e)||e.id!==i||!num(e.credits)||typeof e.alive!=='boolean'||!star(e.home)||!obj(e.tech))return `empire ${i} is invalid`;
     for(const k of Object.keys(TECH))if(!int(e.tech[k])||e.tech[k]<0||e.tech[k]>TECH[k].max)return `empire ${i} has an impossible ${TECH[k].name} level`;
   }
-  const owner=o=>int(o)&&o>=-1&&o<EMP.length;
+  const owner=o=>int(o)&&o>=-1&&o<E;
   if(!arr(g.planets)||!g.planets.every((p,i)=>obj(p)&&p.id===i&&star(p.star)&&PLANET_TYPES[p.type]&&typeof p.name==='string'&&int(p.cap)&&p.cap>=0&&owner(p.owner)&&int(p.pop)&&p.pop>=0))return 'a planet entry is invalid';
   const P=g.planets.length;
   let maxF=0,maxS=0;
@@ -437,13 +472,13 @@ function checkSave(g,orders){
     maxF=Math.max(maxF,f.id);for(const x of f.ships)maxS=Math.max(maxS,x.id);
   }
   if(!int(g.nextFleet)||g.nextFleet<=maxF||!int(g.nextShip)||g.nextShip<=maxS)return 'the fleet or ship counters are behind the fleets';
-  if(!arr(g.intel)||g.intel.length!==EMP.length||!g.intel.every(m=>obj(m)&&arr(m.stars)&&m.stars.length===S&&arr(m.planets)&&m.planets.length===P))return 'the empires\' maps are invalid';
+  if(!arr(g.intel)||g.intel.length!==E||!g.intel.every(m=>obj(m)&&arr(m.stars)&&m.stars.length===S&&arr(m.planets)&&m.planets.length===P))return 'the empires\' maps are invalid';
   if(!arr(g.events))return 'the turn report is missing';
   if(!(g.over==null||obj(g.over)))return 'the game-over record is invalid';
   if(!arr(orders)||!orders.every(o=>obj(o)&&ORDER_TYPES.includes(o.t)))return 'a queued order is invalid';
   return null;
 }
 // CORE-END
-if(typeof module!=='undefined')module.exports={TYPES,COST,SHIP,TECH,techCost,DIFF,diffOf,EMP,STAR_KINDS,PLANET_TYPES,SYSTEMS,makeRng,adjOf,hops,route,
+if(typeof module!=='undefined')module.exports={TYPES,COST,SHIP,TECH,techCost,DIFF,diffOf,EMP,SIZES,sizeOf,VICTORY,habitableCount,dominanceOf,STAR_KINDS,PLANET_TYPES,SYSTEMS,makeRng,adjOf,hops,route,
   fleetSpeed,countTypes,has,planetsAt,capOf,incomeOf,vision,updateIntel,fogView,sightOf,newGame,applyOrders,previewOrders,settleChoice,resolveTurn,aiOrders,
   SAVE_FORMAT,SAVE_VERSION,SAVE_YAML,toSave,fromSave,checkSave};
