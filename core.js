@@ -1,6 +1,8 @@
 // CORE-START — pure domain core: plain data in, plain data out. No DOM, no I/O, no clock.
 // The game's version, semantic versioning. Keep package.json and CHANGELOG.md in step (a test checks).
-const GAME_VERSION='1.0.1';
+const GAME_VERSION='1.1.0';
+// A small Easy galaxy whose home system has a poor and a rich free planet; the tutorial is played in it.
+const TUTORIAL_SEED=164;
 const TYPES=['fighter','colony','scout'];
 const COST={fighter:15,colony:25,scout:8};
 const SHIP={fighter:['Fighter','Fighters'],colony:['Colony ship','Colony ships'],scout:['Scout','Scouts']};
@@ -139,9 +141,12 @@ function newGame(seed,difficulty='normal',size='small',victory='total'){
   if(!SIZES[size])size='small';if(!VICTORY[victory])victory='total';
   const Z=SIZES[size],rng=makeRng(seed),N=Z.stars,R=Z.radius,stars=[];
   for(let tries=0;stars.length<N&&tries<6000*N/28;tries++){
+    // A thick disc: x and y across the galactic plane, z above or below it, deepest at the core and thinning to the rim.
+    // Spacing is checked across the plane, so seen from above no two stars (or their names) crowd each other.
     const ang=rng.next()*Math.PI*2,r=Math.sqrt(rng.next())*R;
     const x=Math.cos(ang)*r,y=Math.sin(ang)*r*0.78;
-    if(stars.every(s=>Math.hypot(s.x-x,s.y-y)>9.5))stars.push({id:stars.length,x,y});
+    const z=(rng.next()+rng.next()-1)*R*0.42*(1-0.65*r/R);
+    if(stars.every(s=>Math.hypot(s.x-x,s.y-y)>9.5))stars.push({id:stars.length,x,y,z});
   }
   const names=NAMES.slice();
   for(let i=names.length-1;i>0;i--){const j=rng.int(i+1);[names[i],names[j]]=[names[j],names[i]];}
@@ -151,8 +156,8 @@ function newGame(seed,difficulty='normal',size='small',victory='total'){
     names.push(...extra);
   }
   for(const st of stars){st.name=names[st.id];st.kind=rng.int(5);}
-  // Hyperlanes: the Gabriel graph — a lane joins two stars when no third star sits inside the circle they span.
-  const n=stars.length,d2=(i,j)=>(stars[i].x-stars[j].x)**2+(stars[i].y-stars[j].y)**2,lanes=[];
+  // Hyperlanes: the Gabriel graph in 3D — a lane joins two stars when no third star sits inside the sphere they span.
+  const n=stars.length,d2=(i,j)=>(stars[i].x-stars[j].x)**2+(stars[i].y-stars[j].y)**2+(stars[i].z-stars[j].z)**2,lanes=[];
   for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){
     const d=d2(i,j);let ok=true;
     for(let k=0;k<n&&ok;k++)if(k!==i&&k!==j&&d2(i,k)+d2(j,k)<d)ok=false;
@@ -447,11 +452,13 @@ function aiOrders(s,e,rng){
 // A save is plain data: a format name, a version and the whole game state, plus any orders queued but not yet run.
 // Bump SAVE_VERSION whenever the shape of the state changes, and add a migration from the old version if one is possible.
 const SAVE_FORMAT='gabriels-reach-save';
-const SAVE_VERSION=2;
+const SAVE_VERSION=3;
 // version n -> function turning a version-n save into a version n+1 save
 const MIGRATIONS={
   // 1 -> 2: galaxy size and victory condition were added; every version-1 game was a small galaxy played to total victory.
-  1:d=>({...d,version:2,size:'small',victory:'total',game:{...d.game,size:'small',victory:'total'}})
+  1:d=>({...d,version:2,size:'small',victory:'total',game:{...d.game,size:'small',victory:'total'}}),
+  // 2 -> 3: stars gained a height (z); earlier galaxies were flat.
+  2:d=>({...d,version:3,game:{...d.game,stars:(d.game?.stars||[]).map(st=>({...st,z:st?.z??0}))}})
 };
 const SAVE_YAML={flowLevel:3,lineWidth:-1,noRefs:true};// js-yaml options: one line per star, planet, fleet and lane
 const ORDER_TYPES=['research','move','split','target','merge','build'];
@@ -482,7 +489,7 @@ function checkSave(g,orders){
   if(!VICTORY[g.victory])return `the victory condition "${g.victory}" is unknown`;
   const E=SIZES[g.size].empires;
   const S=arr(g.stars)?g.stars.length:0;
-  if(S<2||!g.stars.every((st,i)=>obj(st)&&st.id===i&&num(st.x)&&num(st.y)&&typeof st.name==='string'&&int(st.kind)&&st.kind>=0&&st.kind<STAR_KINDS.length))return 'a star entry is invalid';
+  if(S<2||!g.stars.every((st,i)=>obj(st)&&st.id===i&&num(st.x)&&num(st.y)&&num(st.z)&&typeof st.name==='string'&&int(st.kind)&&st.kind>=0&&st.kind<STAR_KINDS.length))return 'a star entry is invalid';
   const star=i=>int(i)&&i>=0&&i<S;
   if(!arr(g.lanes)||!g.lanes.every(l=>arr(l)&&l.length===2&&star(l[0])&&star(l[1])))return 'a lane joins stars that do not exist';
   if(!arr(g.empires)||g.empires.length!==E)return `there should be ${E} empires in a ${g.size} galaxy`;
@@ -508,6 +515,6 @@ function checkSave(g,orders){
   return null;
 }
 // CORE-END
-if(typeof module!=='undefined')module.exports={GAME_VERSION,TYPES,COST,SHIP,TECH,techCost,DIFF,diffOf,EMP,SIZES,sizeOf,VICTORY,habitableCount,dominanceOf,STAR_KINDS,PLANET_TYPES,SYSTEMS,makeRng,adjOf,hops,route,
+if(typeof module!=='undefined')module.exports={GAME_VERSION,TUTORIAL_SEED,TYPES,COST,SHIP,TECH,techCost,DIFF,diffOf,EMP,SIZES,sizeOf,VICTORY,habitableCount,dominanceOf,STAR_KINDS,PLANET_TYPES,SYSTEMS,makeRng,adjOf,hops,route,
   fleetSpeed,countTypes,has,planetsAt,capOf,shipyardCapacity,incomeOf,vision,updateIntel,fogView,sightOf,newGame,applyOrders,previewOrders,settleChoice,colonyOrder,resolveTurn,aiOrders,
   SAVE_FORMAT,SAVE_VERSION,SAVE_YAML,toSave,fromSave,checkSave};

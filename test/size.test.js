@@ -16,10 +16,10 @@ test('galaxy sizes set the number of stars and empires', () => {
 });
 
 test('the default is a small galaxy with total victory, unchanged from before', () => {
-  const s = g.newGame(33);
+  const s = g.newGame(g.TUTORIAL_SEED);
   assert.equal(s.size, 'small');
   assert.equal(s.victory, 'total');
-  assert.equal(s.stars[s.empires[0].home].name, 'Yed', 'the tutorial galaxy is the same');
+  assert.equal(s.stars.length, 28);
 });
 
 test('every empire starts on its own homeworld, spread across the galaxy', () => {

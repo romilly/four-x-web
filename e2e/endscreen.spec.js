@@ -3,7 +3,7 @@ const { test, expect, openGame, withGame, savedGame } = require('./fixtures');
 test('after a win, New game… opens the Game tab and starts a game without asking to abandon', async ({ page }) => {
   // Every rival has already lost its planets and ships, so ending the turn wins.
   await openGame(page, withGame(() => {
-    const g = newGame(33);
+    const g = newGame(TUTORIAL_SEED);
     for (const p of g.planets) if (p.owner > 0) { p.owner = -1; p.pop = 0; }
     g.fleets = g.fleets.filter(f => f.owner === 0);
     return g;

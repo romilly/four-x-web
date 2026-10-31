@@ -8,6 +8,16 @@ and at the foot of the orders panel) and is recorded in every saved game.
 The save-file format has its own number (`version` in a save); it changes only when the shape of a saved
 game changes.
 
+## 1.1.0 (2026-10-31)
+
+- Galaxies are three-dimensional: a thick disc, deepest at the core. Hyperlanes and homeworld spacing use
+  true 3D distances. A faint line under each star shows its height; tilt the map to see the shape.
+- Saves now record each star's height (save format 3). Older saves and games already in your browser
+  load as flat galaxies.
+- The Basics help is up to date: it lists the rivals still in the game and those that have fallen, and covers
+  expansion, the turn report, 3D, and starting new games.
+- The tutorial uses a new galaxy (seed 164) with the same lessons.
+
 ## 1.0.1 (2026-10-31)
 
 - Ships built in the same system in one turn now give a single dispatch, such as

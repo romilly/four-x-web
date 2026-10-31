@@ -32,18 +32,19 @@ function showTaps() {
   const pause = ms => page.waitForTimeout(ms);
   const click = async sel => { const el = page.locator(sel).first(); await el.scrollIntoViewIfNeeded(); const b = await el.boundingBox(); await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 8 }); await pause(250); await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2); };
   const clickAt = async ({ x, y }) => { await page.mouse.move(x, y, { steps: 10 }); await pause(250); await page.mouse.click(x, y); };
-  const star = name => page.evaluate(n => { const l = [...document.querySelectorAll('.lbl')].find(l => l.firstChild && l.firstChild.textContent === n); const r = l.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y - 12 }; }, name);
+  // the player's home star: its label is in the player's gold
+  const home = () => page.evaluate(() => { const l = [...document.querySelectorAll('.lbl')].find(l => l.firstChild && l.firstChild.style.color === 'rgb(242, 181, 68)'); const r = l.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y - 12 }; });
 
   // The tutorial galaxy, without the coach strip
   await page.goto(GAME_URL);
-  await page.evaluate(() => { localStorage.setItem('gr-save-3', JSON.stringify({ game: newGame(33, 'easy'), pending: [] })); localStorage.removeItem('gr-tut-1'); });
+  await page.evaluate(() => { localStorage.setItem('gr-save-3', JSON.stringify({ game: newGame(TUTORIAL_SEED, 'easy'), pending: [] })); localStorage.removeItem('gr-tut-1'); });
   await page.reload(); await pause(1500);
-  await clickAt(await star('Yed')); await pause(1200);
+  await clickAt(await home()); await pause(1200);
   await click('[data-act="enter"]'); await pause(1800);
   await click('.prow:has-text("habitability 6")'); await pause(1000);
   await click('[data-act="colonise"]'); await pause(1000);
   await click('#end'); await pause(1800);
-  await click('[data-act="exit"]'); await pause(1000); // Yed stays selected, so its fleet is in the orders panel
+  await click('[data-act="exit"]'); await pause(1000); // home stays selected, so its fleet is in the orders panel
   await click('[data-act="send"]'); await pause(600);
   await click('[data-act="dec"][data-type="fighter"]'); await pause(250);
   await click('[data-act="dec"][data-type="fighter"]'); await pause(500);

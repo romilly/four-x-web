@@ -1,7 +1,7 @@
 const { test, expect, openGame, withGame, selectHome, homeStar, tap, savedGame } = require('./fixtures');
 
 test('two colony ships in one fleet settle two planets in the same turn', async ({ page }) => {
-  await openGame(page, withGame(() => { const g = newGame(33); g.fleets.find(f => f.owner === 0).ships.push({ id: 99, type: 'colony' }); return g; }));
+  await openGame(page, withGame(() => { const g = newGame(TUTORIAL_SEED); g.fleets.find(f => f.owner === 0).ships.push({ id: 99, type: 'colony' }); return g; }));
   await selectHome(page);
   await page.locator('[data-act="enter"]').click();
   const free = page.locator('.prow', { hasText: 'Free' });
@@ -28,7 +28,7 @@ test('taps on the map keep working after drags that end over the orders panel', 
 });
 
 test('a full shipyard refuses more ships this turn', async ({ page }) => {
-  await openGame(page, withGame(() => { const g = newGame(33); g.empires[0].credits = 120; g.planets.find(p => p.owner === 0).pop = 5; return g; }));
+  await openGame(page, withGame(() => { const g = newGame(TUTORIAL_SEED); g.empires[0].credits = 120; g.planets.find(p => p.owner === 0).pop = 5; return g; }));
   await selectHome(page);
   await expect(page.locator('.slots b')).toHaveText('0 of 2');
   await page.locator('[data-act="build"][data-type="fighter"]').click();
@@ -37,7 +37,7 @@ test('a full shipyard refuses more ships this turn', async ({ page }) => {
   await expect(page.locator('[data-act="build"][data-type="fighter"]')).toBeDisabled();
   await page.locator('#end').click();
   await expect(page.locator('.log li.build')).toHaveCount(1);
-  await expect(page.locator('.log li.build')).toHaveText(/^2 fighters created at Yed and joined Fleet 1\.$/);
+  await expect(page.locator('.log li.build')).toHaveText(/^2 fighters created at [A-Za-z]+ and joined Fleet 1\.$/);
 });
 
 test('entering a system and returning to the galaxy', async ({ page }) => {

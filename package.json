@@ -1,6 +1,6 @@
 {
   "name": "four-x-web",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "private": true,
   "description": "Gabriel's Reach, a small three.js space 4X",
   "scripts": {

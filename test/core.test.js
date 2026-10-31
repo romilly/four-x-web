@@ -170,7 +170,7 @@ test('difficulty levels rank in order for a scripted stand-in', () => {
 
 // Two colony ships in one fleet, two free planets in the system.
 function twoShips() {
-  const s = g.newGame(33), h = s.empires[0].home, f = s.fleets.find(f => f.owner === 0);
+  const s = g.newGame(g.TUTORIAL_SEED), h = s.empires[0].home, f = s.fleets.find(f => f.owner === 0);
   f.ships.push({ id: 99, type: 'colony' });
   const [a, b] = g.planetsAt(s, h).filter(p => p.owner < 0 && p.cap > 0).map(p => p.id);
   return { s, h, f, a, b };
@@ -225,7 +225,7 @@ test('a fleet with one colony ship already aimed at a free planet is re-aimed, n
 
 // ---------- shipyard capacity ----------
 test('a system launches 1 ship a turn, plus 1 for every 4 people on your planets there', () => {
-  const s = g.newGame(33), h = s.empires[0].home, home = s.planets.find(p => p.owner === 0);
+  const s = g.newGame(g.TUTORIAL_SEED), h = s.empires[0].home, home = s.planets.find(p => p.owner === 0);
   home.pop = 3; assert.equal(g.shipyardCapacity(s, 0, h), 1);
   home.pop = 4; assert.equal(g.shipyardCapacity(s, 0, h), 2);
   const other = g.planetsAt(s, h).find(p => p.owner < 0 && p.cap > 0);
@@ -234,7 +234,7 @@ test('a system launches 1 ship a turn, plus 1 for every 4 people on your planets
 });
 
 test('builds beyond a system\'s capacity are refused and cost nothing', () => {
-  const s = g.newGame(33), h = s.empires[0].home;
+  const s = g.newGame(g.TUTORIAL_SEED), h = s.empires[0].home;
   s.empires[0].credits = 100;
   const r = g.resolveTurn(s, { 0: [1, 2, 3].map(() => ({ t: 'build', star: h, kind: 'fighter' })) }, g.makeRng(1)).state;
   const fighters = r.fleets.filter(f => f.owner === 0).reduce((n, f) => n + g.countTypes(f).fighter, 0);
@@ -243,7 +243,7 @@ test('builds beyond a system\'s capacity are refused and cost nothing', () => {
 });
 
 test('each system has its own capacity', () => {
-  const s = g.newGame(33), h = s.empires[0].home, other = g.adjOf(s)[h].find(j => g.planetsAt(s, j).length);
+  const s = g.newGame(g.TUTORIAL_SEED), h = s.empires[0].home, other = g.adjOf(s)[h].find(j => g.planetsAt(s, j).length);
   const p = g.planetsAt(s, other)[0]; p.owner = 0; p.pop = 1;
   s.empires[0].credits = 100;
   const o = [h, h, other, other].map(star => ({ t: 'build', star, kind: 'scout' }));
@@ -267,7 +267,7 @@ test('rivals respect shipyard capacity too', () => {
 });
 
 test('ships built in one system in one turn give a single dispatch', () => {
-  const s = g.newGame(33), h = s.empires[0].home;
+  const s = g.newGame(g.TUTORIAL_SEED), h = s.empires[0].home;
   s.planets.find(p => p.owner === 0).pop = 9; // capacity 3
   s.empires[0].credits = 200;
   const builds = ['fighter', 'fighter', 'scout'].map(kind => ({ t: 'build', star: h, kind }));
@@ -279,7 +279,7 @@ test('ships built in one system in one turn give a single dispatch', () => {
 });
 
 test('a single new ship reads naturally', () => {
-  const s = g.newGame(33), h = s.empires[0].home;
+  const s = g.newGame(g.TUTORIAL_SEED), h = s.empires[0].home;
   s.empires[0].credits = 100;
   const { events } = g.resolveTurn(s, { 0: [{ t: 'build', star: h, kind: 'colony' }] }, g.makeRng(1));
   assert.equal(events.find(e => e.kind === 'build').msg, `1 colony ship created at ${s.stars[h].name} and joined Fleet 1.`);

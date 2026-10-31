@@ -1,7 +1,7 @@
 # Gabriel's Reach
 
 A small turn-based space 4X in the browser, rendered with three.js.
-Explore a fogged star cluster, split and merge fleets, settle colonies,
+Explore a fogged, three-dimensional star cluster, split and merge fleets, settle colonies,
 research, and out-fight up to six scripted rivals.
 
 ![A short demo: colonising a planet, sending a scout, then a large galaxy](docs/demo.gif)
