@@ -207,6 +207,8 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
 .seg button:first-child{border-left:0}
 .seg button i{font:400 10.5px var(--f-data);font-style:normal;color:var(--dim);white-space:normal}
 .seg button[aria-checked="true"]{background:rgba(242,181,68,.14);color:var(--gold);box-shadow:inset 0 -2px 0 var(--gold)}
+.thisgame{margin-top:12px;padding:10px 12px;border:1px solid var(--rule);border-radius:8px;font-size:13.5px;display:flex;flex-direction:column;gap:4px}
+.thisgame .pl{margin-bottom:2px}
 .fail{position:fixed;inset:0;display:grid;place-items:center;text-align:center;color:var(--dim)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -265,9 +267,10 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
         <p><b>New here?</b> The tutorial plays the first turns with you, one step at a time, in a gentle galaxy.</p>
         <button class="btn primary" data-tut="start">Play the tutorial</button>
       </div>
+      <div class="thisgame" id="thisGame"></div>
       <ul>
-        <li>You lead the <b style="color:var(--gold)">Aurum Concord</b>. <span id="rivalList"></span> An empire falls when it has no planets and no colony ships.</li>
-        <li id="victoryLine"></li>
+        <li>You lead the <b style="color:var(--gold)">Aurum Concord</b> against <b>2, 4 or 6 rival empires</b>, depending on the galaxy size you choose: small, medium or large. An empire falls when it has no planets and no colony ships.</li>
+        <li>There are two ways to win, chosen when you start a game. <b>Total victory:</b> be the last empire standing. <b>Dominance:</b> hold 60% of all the galaxy's habitable planets, or be the last standing; if a rival reaches 60% first, it wins. In a dominance game your share shows at the top of the screen.</li>
         <li>Each turn, give your orders, then press <b>End turn</b>. Everything happens at once: your orders, the rivals' orders, battles, sieges, growth.</li>
         <li><b>Industry (IU)</b> pays for ships and research. You earn 2 IU a turn plus 1 for every person on your planets. Unspent IU carries over.</li>
         <li><b>Expand:</b> settle free planets with colony ships, and let colonies grow. Population is income, and every 4 people in a system let its shipyard launch one more ship a turn.</li>
@@ -944,16 +947,14 @@ function openHelp(tab='basics'){
   $('diffNote').textContent=DIFF_NOTE;
   $('loadConfirm').hidden=true;toLoad=null;
   $('seedLine').textContent=`Version ${GAME_VERSION} · Galaxy ${game.seed} · ${sizeOf(game).label} · ${VICTORY[game.victory].label} · ${diffOf(game).label} · turn ${game.turn}`;
-  // Rivals still in the game, then any that have fallen.
+  // This game: size, victory, difficulty, the rivals still in play and any that have fallen.
   const rivals=game.empires.slice(1),alive=rivals.filter(e=>e.alive),fallen=rivals.filter(e=>!e.alive);
   const and=a=>a.length>1?a.slice(0,-1).join(', ')+' and '+a[a.length-1]:a[0];
   const word=n=>['No','One','Two','Three','Four','Five','Six'][n]??n;
   const named=e=>`<b style="color:${e.color}">${esc(e.name)}</b>`;
-  $('rivalList').innerHTML=(alive.length?`${word(alive.length)} ${alive.length===1?'rival remains':'rivals remain'}: ${and(alive.map(named))}.`:'Every rival has fallen.')
-    +(fallen.length?` Fallen: ${and(fallen.map(e=>esc(e.name)))}.`:'');
-  $('victoryLine').innerHTML=game.victory==='dominance'
-    ?`<b>Dominance:</b> hold 60% of all habitable planets in the galaxy, or be the last empire standing. If a rival reaches 60% first, you lose. Your share shows at the top of the screen.`
-    :`<b>Total victory:</b> be the last empire standing.`;
+  $('thisGame').innerHTML=`<div class="pl">This game</div>
+    <div>${sizeOf(game).label} galaxy, ${sizeOf(game).stars} stars · ${game.victory==='dominance'?'Dominance (60% of habitable planets)':'Total victory'} · ${diffOf(game).label} rivals</div>
+    <div id="rivalList">${alive.length?`${word(alive.length)} ${alive.length===1?'rival remains':'rivals remain'}: ${and(alive.map(named))}.`:'Every rival has fallen.'}${fallen.length?` Fallen: ${and(fallen.map(e=>esc(e.name)))}.`:''}</div>`;
   renderPicks();
   $('helpModal').hidden=false;
 }

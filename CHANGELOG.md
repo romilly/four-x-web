@@ -14,8 +14,9 @@ game changes.
   true 3D distances. A faint line under each star shows its height; tilt the map to see the shape.
 - Saves now record each star's height (save format 3). Older saves and games already in your browser
   load as flat galaxies.
-- The Basics help is up to date: it lists the rivals still in the game and those that have fallen, and covers
-  expansion, the turn report, 3D, and starting new games.
+- The Basics help is up to date. It states the general rules (2, 4 or 6 rivals; total or dominance victory),
+  with the current game's size, victory, difficulty and remaining rivals in a separate "This game" box, and
+  covers expansion, the turn report, 3D, and starting new games.
 - The tutorial uses a new galaxy (seed 164) with the same lessons.
 
 ## 1.0.1 (2026-10-31)
