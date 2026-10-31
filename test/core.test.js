@@ -265,3 +265,22 @@ test('rivals respect shipyard capacity too', () => {
     s = g.resolveTurn(s, orders, rng).state;
   }
 });
+
+test('ships built in one system in one turn give a single dispatch', () => {
+  const s = g.newGame(33), h = s.empires[0].home;
+  s.planets.find(p => p.owner === 0).pop = 9; // capacity 3
+  s.empires[0].credits = 200;
+  const builds = ['fighter', 'fighter', 'scout'].map(kind => ({ t: 'build', star: h, kind }));
+  const { events } = g.resolveTurn(s, { 0: builds }, g.makeRng(1));
+  const built = events.filter(e => e.kind === 'build');
+  assert.equal(built.length, 1);
+  assert.equal(built[0].msg, `2 fighters and 1 scout created at ${s.stars[h].name} and joined Fleet 1.`);
+  assert.equal(built[0].star, h);
+});
+
+test('a single new ship reads naturally', () => {
+  const s = g.newGame(33), h = s.empires[0].home;
+  s.empires[0].credits = 100;
+  const { events } = g.resolveTurn(s, { 0: [{ t: 'build', star: h, kind: 'colony' }] }, g.makeRng(1));
+  assert.equal(events.find(e => e.kind === 'build').msg, `1 colony ship created at ${s.stars[h].name} and joined Fleet 1.`);
+});

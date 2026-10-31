@@ -36,7 +36,8 @@ test('a full shipyard refuses more ships this turn', async ({ page }) => {
   await expect(page.locator('.slots b')).toHaveText('2 of 2');
   await expect(page.locator('[data-act="build"][data-type="fighter"]')).toBeDisabled();
   await page.locator('#end').click();
-  await expect(page.locator('.log li', { hasText: 'Fighter launched' })).toHaveCount(2);
+  await expect(page.locator('.log li.build')).toHaveCount(1);
+  await expect(page.locator('.log li.build')).toHaveText(/^2 fighters created at Yed and joined Fleet 1\.$/);
 });
 
 test('entering a system and returning to the galaxy', async ({ page }) => {

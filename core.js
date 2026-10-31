@@ -1,6 +1,6 @@
 // CORE-START — pure domain core: plain data in, plain data out. No DOM, no I/O, no clock.
 // The game's version, semantic versioning. Keep package.json and CHANGELOG.md in step (a test checks).
-const GAME_VERSION='1.0.0';
+const GAME_VERSION='1.0.1';
 const TYPES=['fighter','colony','scout'];
 const COST={fighter:15,colony:25,scout:8};
 const SHIP={fighter:['Fighter','Fighters'],colony:['Colony ship','Colony ships'],scout:['Scout','Scouts']};
@@ -227,7 +227,7 @@ function applyOrders(s,e,orders,say,withBuilds){
     }
   }
   if(!withBuilds)return;
-  const launched={};
+  const launched={},built={};
   for(const o of orders){
     if(o.t!=='build')continue;
     const st=s.stars[o.star],c=COST[o.kind];
@@ -237,7 +237,13 @@ function applyOrders(s,e,orders,say,withBuilds){
     let f=s.fleets.find(f=>f.owner===e&&f.at===o.star&&f.dest==null);
     if(!f){f={id:s.nextFleet++,owner:e,at:o.star,dest:null,target:null,ships:[]};s.fleets.push(f);}
     f.ships.push({id:s.nextShip++,type:o.kind});
-    if(e===0)say(`${SHIP[o.kind][0]} launched at ${st.name} and joined Fleet ${f.id}.`,'build',st.id);
+    (built[o.star]??={fleet:f.id,count:{}}).count[o.kind]=(built[o.star]?.count[o.kind]||0)+1;
+  }
+  // One dispatch per system: "2 fighters and 1 scout created at Yed and joined Fleet 1."
+  if(e===0)for(const [star,b] of Object.entries(built)){
+    const parts=TYPES.filter(t=>b.count[t]).map(t=>`${b.count[t]} ${SHIP[t][b.count[t]===1?0:1].toLowerCase()}`);
+    const list=parts.length>1?parts.slice(0,-1).join(', ')+' and '+parts[parts.length-1]:parts[0];
+    say(`${list} created at ${s.stars[star].name} and joined Fleet ${b.fleet}.`,'build',+star);
   }
 }
 // What the state looks like once an empire's movement and research orders are applied (no builds, no turn).

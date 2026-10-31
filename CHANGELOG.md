@@ -8,6 +8,11 @@ and at the foot of the orders panel) and is recorded in every saved game.
 The save-file format has its own number (`version` in a save); it changes only when the shape of a saved
 game changes.
 
+## 1.0.1 (2026-10-31)
+
+- Ships built in the same system in one turn now give a single dispatch, such as
+  "2 fighters and 1 scout created at Yed and joined Fleet 1", instead of one line per ship.
+
 ## 1.0.0 (2026-10-30)
 
 The first numbered release, covering everything built so far:
