@@ -284,3 +284,32 @@ test('a single new ship reads naturally', () => {
   const { events } = g.resolveTurn(s, { 0: [{ t: 'build', star: h, kind: 'colony' }] }, g.makeRng(1));
   assert.equal(events.find(e => e.kind === 'build').msg, `1 colony ship created at ${s.stars[h].name} and joined Fleet 1.`);
 });
+
+// ---------- rivals' ship spending ----------
+function richRival(difficulty, credits) {
+  const s = g.newGame(7, difficulty, 'small'), e = 1;
+  s.turn = 30; s.empires[e].credits = credits;
+  for (const p of s.planets) if (p.owner === e) p.pop = 80; // a huge shipyard, so capacity is not the limit
+  return { s, e };
+}
+const fightersOrdered = (s, e) => g.aiOrders(s, e, g.makeRng(1)).filter(o => o.t === 'build' && o.kind === 'fighter').length;
+
+test('a rival spends at most its difficulty\'s share of its IU on fighters', () => {
+  for (const d of ['easy', 'normal', 'hard']) {
+    const { s, e } = richRival(d, 300);
+    const n = fightersOrdered(s, e);
+    assert.ok(n * g.COST.fighter <= 300 * g.DIFF[d].shipShare, `${d}: ${n} fighters`);
+    // research (40) and a colony ship (25) come first; the share applies to what is left
+    assert.ok(n >= Math.floor((300 - 40 - 25) * g.DIFF[d].shipShare / g.COST.fighter) - 1, `${d}: spends close to its share (${n})`);
+  }
+});
+
+test('richer rivals build bigger fleets: there is no fixed number per turn', () => {
+  const small = fightersOrdered(...Object.values(richRival('normal', 60)));
+  const big = fightersOrdered(...Object.values(richRival('normal', 300)));
+  assert.ok(big > small && big > 3, `${small} then ${big}`);
+});
+
+test('harder rivals spend a larger share on fighters', () => {
+  assert.ok(g.DIFF.easy.shipShare <= g.DIFF.normal.shipShare && g.DIFF.normal.shipShare < g.DIFF.hard.shipShare);
+});

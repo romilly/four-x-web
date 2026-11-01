@@ -1,6 +1,6 @@
 // CORE-START — pure domain core: plain data in, plain data out. No DOM, no I/O, no clock.
 // The game's version, semantic versioning. Keep package.json and CHANGELOG.md in step (a test checks).
-const GAME_VERSION='1.1.0';
+const GAME_VERSION='1.2.0';
 // A small Easy galaxy whose home system has a poor and a rich free planet; the tutorial is played in it.
 const TUTORIAL_SEED=164;
 const TYPES=['fighter','colony','scout'];
@@ -12,11 +12,12 @@ const TECH={
   terraform:{name:'Terraforming',max:3,desc:'+1 population cap on every habitable planet you hold.'}
 };
 const techCost=l=>40+40*l;
-// Difficulty shapes only the rivals: what they can see, when they strike, how fast they build, how much they earn.
+// Difficulty shapes only the rivals: what they can see, when they strike, what share of their IU they may spend on
+// fighters each turn (so their fleets grow with their empires), and how much they earn.
 const DIFF={
-  easy:{label:'Easy',fog:true,attackTurn:20,builds:1,income:0.75},
-  normal:{label:'Normal',fog:true,attackTurn:10,builds:2,income:1},
-  hard:{label:'Hard',fog:false,attackTurn:6,builds:3,income:1.25}
+  easy:{label:'Easy',fog:true,attackTurn:20,shipShare:0.5,income:0.75},
+  normal:{label:'Normal',fog:true,attackTurn:10,shipShare:0.5,income:1},
+  hard:{label:'Hard',fog:false,attackTurn:6,shipShare:0.8,income:1.25}
 };
 const diffOf=s=>DIFF[s.difficulty]||DIFF.normal;
 // You are always empire 0. Small galaxies use the first three, medium the first five, large all seven.
@@ -419,8 +420,9 @@ function aiOrders(s,e,rng){
   if(yards.length){
     const open=free.filter(p=>!claimed.has(p.id)).length;
     if(open>0&&colonyShips<2&&cash>=COST.colony)build('colony');
-    const reserve=s.turn>6&&nextTech?Math.min(techCost(emp.tech[nextTech]),60):0;
-    for(let k=0;k<diffOf(s).builds&&cash-COST.fighter>=reserve;k++)if(!build('fighter'))break;
+    // Fighters: up to the difficulty's share of the IU held after research and colony ships; the rest is kept for research.
+    let budget=Math.floor(cash*diffOf(s).shipShare);
+    while(budget>=COST.fighter&&cash>=COST.fighter&&build('fighter'))budget-=COST.fighter;
   }
   const targets=v.planets.filter(p=>p.owner>=0&&p.owner!==e);
   if(s.turn>=diffOf(s).attackTurn&&targets.length){

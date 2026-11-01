@@ -371,7 +371,7 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
       <div class="diffs" data-confirm="1">
         <button class="btn" data-diff="easy">Easy</button><button class="btn" data-diff="normal">Normal</button><button class="btn" data-diff="hard">Hard</button>
       </div>
-      <p class="note" id="diffNote">Easy rivals attack late and earn less. Hard rivals see the whole map, strike early and earn more.</p>
+      <p class="note" id="diffNote">Easy rivals attack late and earn less. Hard rivals see the whole map, strike early, earn more and spend more of their income on fighters.</p>
     </div>
       <div class="newg">
         <h3>Tutorial</h3>
@@ -930,7 +930,7 @@ $('techList').addEventListener('click',e=>{
 });
 $('techBtn').onclick=()=>{if(tut)tut.sawTech=true;renderTech();$('techModal').hidden=false;coachUpdate();};
 $('helpBtn').onclick=()=>openHelp(tut?'basics':'basics');
-const DIFF_NOTE='Easy rivals attack late and earn less. Hard rivals see the whole map, strike early and earn more.';
+const DIFF_NOTE='Easy rivals attack late and earn less. Hard rivals see the whole map, strike early, earn more and spend more of their income on fighters.';
 const info=tab=>`<button class="info" data-help="${tab}" aria-label="Help on ${tab}">i</button>`;
 function showTab(tab){
   document.querySelectorAll('#helpModal [data-tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===tab)));

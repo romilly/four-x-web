@@ -8,6 +8,14 @@ and at the foot of the orders panel) and is recorded in every saved game.
 The save-file format has its own number (`version` in a save); it changes only when the shape of a saved
 game changes.
 
+## 1.2.0 (2026-11-01)
+
+- Rivals no longer build a fixed number of fighters per turn (1, 2 or 3 by difficulty), however large their
+  empire. Each turn they may now spend a share of the IU they hold on fighters: 50% on Easy and Normal, 80% on
+  Hard; the rest goes to research. Their fleets grow with their empires, so the late game stays tense.
+  Shipyard capacity applies to them as to you.
+- Normal is noticeably harder than before, especially in small galaxies; Easy is still gentle.
+
 ## 1.1.0 (2026-10-31)
 
 - Galaxies are three-dimensional: a thick disc, deepest at the core. Hyperlanes and homeworld spacing use
