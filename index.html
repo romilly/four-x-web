@@ -175,6 +175,17 @@ button{font:inherit;color:inherit;cursor:pointer}
 @media (max-width:430px){.card.help{column-gap:10px}.tabs button{padding-right:8px;font-size:12.5px}}
 .tabp ul{padding-left:18px;margin:12px 0;display:flex;flex-direction:column;gap:8px;font-size:14px;max-width:62ch}
 .tabp>.newg:first-child{margin-top:8px;border-top:0;padding-top:4px}
+.emp{padding:8px 0;border-top:1px solid rgba(38,48,77,.6)}
+.emp:first-child{border-top:0;padding-top:2px}
+.emp .who{display:flex;align-items:baseline;gap:6px;margin-bottom:5px;font-weight:600}
+.emp .who small{color:var(--dim);font-weight:400;font-size:12px}
+.emp.fallen{opacity:.55}
+.facts.five{grid-template-columns:repeat(5,minmax(0,1fr))}
+.about-title{margin:4px 0 8px;font:400 15px var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+.about-title span{font:500 12px var(--f-data);letter-spacing:.04em;text-transform:none;color:var(--dim);margin-left:6px}
+.tabp .note+.note{margin-top:8px}
+.links{list-style:none;padding:0!important;gap:4px!important}
+.tabp a{color:var(--teal)}
 .ref{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
 .ref th{text-align:left;font:500 10px var(--f-data);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);padding:4px 8px 4px 0;border-bottom:1px solid var(--rule)}
 .ref td{padding:6px 8px 6px 0;border-bottom:1px solid rgba(38,48,77,.6);vertical-align:top}
@@ -269,7 +280,7 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
       <button class="btn small" data-close="helpModal">Close</button>
     </div>
     <div class="tabs" role="tablist" aria-orientation="vertical">
-      <button role="tab" data-tab="basics">Basics</button><button role="tab" data-tab="fleets">Fleets</button><button role="tab" data-tab="planets">Planets</button><button role="tab" data-tab="combat">Combat</button><button role="tab" data-tab="research">Research</button><button role="tab" data-tab="controls">Controls</button><button role="tab" data-tab="game">Game</button>
+      <button role="tab" data-tab="basics">Basics</button><button role="tab" data-tab="status">Status</button><button role="tab" data-tab="fleets">Fleets</button><button role="tab" data-tab="planets">Planets</button><button role="tab" data-tab="combat">Combat</button><button role="tab" data-tab="research">Research</button><button role="tab" data-tab="controls">Controls</button><button role="tab" data-tab="game">Game</button><button role="tab" data-tab="about">About</button>
     </div>
     <div class="tabp" data-panel="basics">
       <div class="tutcall" id="tutCall">
@@ -288,6 +299,13 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
         <li><b>The turn report</b> in the orders panel lists what happened last turn: battles, captures, new colonies, ships built. Tap a line to jump to that star.</li>
         <li><b>New game:</b> the Game tab chooses galaxy size (3, 5 or 7 empires), victory (total or dominance) and difficulty. It also saves and loads games as files; your game also saves itself in this browser after every move.</li>
       </ul>
+    </div>
+    <div class="tabp" data-panel="status" hidden>
+      <div class="newg">
+        <h3>Empires this turn</h3>
+        <div id="statusList"></div>
+        <p class="note" id="statusNote">True totals for every empire, including what your sensors cannot see. Ships count every fleet, moving or parked; income is IU per turn.</p>
+      </div>
     </div>
     <div class="tabp" data-panel="fleets" hidden>
       <table class="ref"><thead><tr><th>Ship</th><th>Cost</th><th>Job</th></tr></thead><tbody>
@@ -386,6 +404,20 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
         <h3>Tutorial</h3>
         <button class="btn" data-tut="start" id="tutRestart">Start the tutorial</button>
         <p class="note" id="tutNote">Starts a new, gentle galaxy and guides you through the first turns.</p>
+      </div>
+    </div>
+    <div class="tabp" data-panel="about" hidden>
+      <div class="newg">
+        <h3>About</h3>
+        <p class="about-title">Gabriel's Reach <span id="aboutVersion"></span></p>
+        <p class="note">A small turn-based space 4X: explore a fogged, three-dimensional star cluster, settle colonies,
+          research, and out-fight rival empires. Lanes join stars that are neighbours in a Gabriel graph, which gives the game its name.</p>
+        <p class="note">Written test-first by Romilly Cocking with Claude. The rules live in a pure game core with its own tests; this page draws them with three.js and saves games with js-yaml.</p>
+        <ul class="links">
+          <li><a href="https://romilly.github.io/four-x-web/" target="_blank" rel="noopener">Play online</a></li>
+          <li><a href="https://github.com/romilly/four-x-web" target="_blank" rel="noopener">Source code on GitHub</a></li>
+          <li><a href="https://github.com/romilly/four-x-web/blob/main/CHANGELOG.md" target="_blank" rel="noopener">What's new (changelog)</a></li>
+        </ul>
       </div>
     </div>
   </div>
@@ -941,7 +973,15 @@ $('techBtn').onclick=()=>{if(tut)tut.sawTech=true;renderTech();$('techModal').hi
 $('helpBtn').onclick=()=>openHelp(tut?'basics':'basics');
 const DIFF_NOTE='Easy rivals attack late and earn less. Hard rivals see the whole map, strike early, earn more and spend more of their income on fighters.';
 const info=tab=>`<button class="info" data-help="${tab}" aria-label="Help on ${tab}">i</button>`;
+function renderStatus(){
+  const rows=empireStatus(game),n=(k,v,label)=>`<div><dt>${label}</dt><dd data-k="${k}">${v}</dd></div>`;
+  rows.sort((a,b)=>(a.id===0?-1:b.id===0?1:0)||(b.alive-a.alive)||a.id-b.id);
+  $('statusList').innerHTML=rows.map(r=>`<div class="emp${r.alive?'':' fallen'}" data-emp="${r.id}">
+    <div class="who"><span class="dot" style="background:${r.color}"></span><span>${esc(r.name)}</span><small>${r.id===0?'you':''}${r.alive?'':'Fallen'}</small></div>
+    <dl class="facts five">${n('systems',r.systems,'Systems')}${n('income',r.income,'IU/turn')}${n('fighter',r.fighter,'Fighters')}${n('colony',r.colony,'Colony')}${n('scout',r.scout,'Scouts')}</dl></div>`).join('');
+}
 function showTab(tab){
+  if(tab==='status')renderStatus();
   document.querySelectorAll('#helpModal [data-tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===tab)));
   document.querySelectorAll('#helpModal [data-panel]').forEach(p=>p.hidden=p.dataset.panel!==tab);
 }
@@ -955,6 +995,7 @@ function openHelp(tab='basics'){
   document.querySelectorAll('#helpModal [data-diff]').forEach(b=>b.classList.remove('armed'));
   $('diffNote').textContent=DIFF_NOTE;
   $('loadConfirm').hidden=true;toLoad=null;
+  $('aboutVersion').textContent=`v${GAME_VERSION}`;
   $('seedLine').textContent=`Version ${GAME_VERSION} · Galaxy ${game.seed} · ${sizeOf(game).label} · ${VICTORY[game.victory].label} · ${diffOf(game).label} · turn ${game.turn}`;
   // This game: size, victory, difficulty, the rivals still in play and any that have fallen.
   const rivals=game.empires.slice(1),alive=rivals.filter(e=>e.alive),fallen=rivals.filter(e=>!e.alive);

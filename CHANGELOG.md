@@ -8,12 +8,16 @@ and at the foot of the orders panel) and is recorded in every saved game.
 The save-file format has its own number (`version` in a save); it changes only when the shape of a saved
 game changes.
 
-## 1.2.1 (2026-11-02)
+## 1.3.0 (2026-11-02)
 
+- New **Status** tab in the ? panel: every empire in the game, with the systems it holds, its income in IU per
+  turn, and its fighters, colony ships and scouts across all its fleets. These are true totals, fog of war
+  notwithstanding, to help judge how a hard game is going. Fallen empires are listed and marked.
+- New **About** tab: the game, its version, and links to play online, the source and this changelog.
 - On desktops the orders panel can now grow almost to the top of the screen, so long systems need less scrolling.
 - Inside a system, the ‹ Galaxy button (and Enter system on the star map) stays pinned at the top of the panel
   instead of scrolling out of sight.
-- The help panel's tabs are now a vertical column down its left side, so all seven show at once instead of
+- The help panel's tabs are now a vertical column down its left side, so all of them show at once instead of
   scrolling sideways on narrow screens.
 - During the tutorial on desktops, the coaching strip sits over the map beside the orders panel, not on top of it.
 

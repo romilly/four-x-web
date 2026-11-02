@@ -1,6 +1,6 @@
 // CORE-START — pure domain core: plain data in, plain data out. No DOM, no I/O, no clock.
 // The game's version, semantic versioning. Keep package.json and CHANGELOG.md in step (a test checks).
-const GAME_VERSION='1.2.1';
+const GAME_VERSION='1.3.0';
 // A small Easy galaxy whose home system has a poor and a rich free planet; the tutorial is played in it.
 const TUTORIAL_SEED=164;
 const TYPES=['fighter','colony','scout'];
@@ -99,6 +99,17 @@ function shipyardCapacity(s,e,star){
   return held?1+Math.floor(pop/4):0;
 }
 const incomeOf=(s,e)=>{const base=2+s.planets.reduce((a,p)=>a+(p.owner===e?p.pop:0),0);return e===0?base:Math.round(base*diffOf(s).income);};
+
+// One row per empire for the Status tab: systems held (stars with at least one of its planets), planets,
+// income per turn, and ships by type across all its fleets. The true state, not a fogged view.
+function empireStatus(s){
+  return s.empires.map(emp=>{
+    const own=s.planets.filter(p=>p.owner===emp.id),ships={fighter:0,colony:0,scout:0};
+    for(const f of s.fleets)if(f.owner===emp.id)for(const x of f.ships)ships[x.type]++;
+    return{id:emp.id,name:emp.name,color:emp.color,alive:emp.alive,systems:new Set(own.map(p=>p.star)).size,planets:own.length,
+      income:emp.alive?incomeOf(s,emp.id):0,...ships};
+  });
+}
 
 // Sensor range: every star where the empire holds a planet or has a fleet, plus the stars one jump away.
 function vision(s,e){
@@ -518,5 +529,5 @@ function checkSave(g,orders){
 }
 // CORE-END
 if(typeof module!=='undefined')module.exports={GAME_VERSION,TUTORIAL_SEED,TYPES,COST,SHIP,TECH,techCost,DIFF,diffOf,EMP,SIZES,sizeOf,VICTORY,habitableCount,dominanceOf,STAR_KINDS,PLANET_TYPES,SYSTEMS,makeRng,adjOf,hops,route,
-  fleetSpeed,countTypes,has,planetsAt,capOf,shipyardCapacity,incomeOf,vision,updateIntel,fogView,sightOf,newGame,applyOrders,previewOrders,settleChoice,colonyOrder,resolveTurn,aiOrders,
+  fleetSpeed,countTypes,has,planetsAt,capOf,shipyardCapacity,incomeOf,empireStatus,vision,updateIntel,fogView,sightOf,newGame,applyOrders,previewOrders,settleChoice,colonyOrder,resolveTurn,aiOrders,
   SAVE_FORMAT,SAVE_VERSION,SAVE_YAML,toSave,fromSave,checkSave};
