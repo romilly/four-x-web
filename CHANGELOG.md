@@ -8,6 +8,15 @@ and at the foot of the orders panel) and is recorded in every saved game.
 The save-file format has its own number (`version` in a save); it changes only when the shape of a saved
 game changes.
 
+## 1.2.1 (2026-11-02)
+
+- On desktops the orders panel can now grow almost to the top of the screen, so long systems need less scrolling.
+- Inside a system, the ‹ Galaxy button (and Enter system on the star map) stays pinned at the top of the panel
+  instead of scrolling out of sight.
+- The help panel's tabs are now a vertical column down its left side, so all seven show at once instead of
+  scrolling sideways on narrow screens.
+- During the tutorial on desktops, the coaching strip sits over the map beside the orders panel, not on top of it.
+
 ## 1.2.0 (2026-11-01)
 
 - Rivals no longer build a fixed number of fighters per turn (1, 2 or 3 by difficulty), however large their

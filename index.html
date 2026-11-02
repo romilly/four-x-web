@@ -79,7 +79,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 @media (min-width:760px){
   #sheet{left:max(16px,env(safe-area-inset-left,0px));right:auto;bottom:calc(16px + env(safe-area-inset-bottom,0px));
-    width:390px;max-height:72%;border:1px solid var(--rule);border-radius:10px;padding-left:18px;padding-right:18px}
+    width:390px;max-height:calc(100% - 92px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));border:1px solid var(--rule);border-radius:10px;padding-left:18px;padding-right:18px}
 }
 .head{display:flex;align-items:center;gap:12px;padding-block:12px 10px;border-bottom:1px solid var(--rule)}
 .head .t{min-width:0;flex:1}
@@ -95,6 +95,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .facts dd{margin:2px 0 0;font:500 14px var(--f-data);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row{display:flex;align-items:center;gap:10px;padding-block:6px;border-top:1px solid rgba(38,48,77,.6)}
 .row:first-of-type{border-top:0}
+/* Enter system / ‹ Galaxy stays pinned to the top of the panel while the rest scrolls */
+.row.nav{position:sticky;top:-6px;z-index:1;background:rgb(11,16,31);margin-top:-6px;padding-top:12px}
 .row .what{flex:1;min-width:0}
 .row .what b{font-weight:600}
 .row .what span{display:block;color:var(--dim);font-size:12px}
@@ -161,11 +163,16 @@ button{font:inherit;color:inherit;cursor:pointer}
 .ball{flex:none;width:16px;height:16px;border-radius:50%;box-shadow:inset -4px -3px 0 rgba(0,0,0,.35)}
 .pcard{padding:10px 12px;border:1px solid var(--rule);border-radius:8px;background:rgba(6,9,19,.35)}
 .pcard h3{color:var(--gold)}
-.card.help{max-width:560px;padding:16px 18px}
+.card.help{max-width:620px;padding:16px 18px}
 .helphead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.tabs{display:flex;gap:2px;overflow-x:auto;margin:12px 0 4px;border-bottom:1px solid var(--rule);scrollbar-width:none}
-.tabs button{flex:none;background:transparent;border:0;border-bottom:2px solid transparent;color:var(--dim);padding:8px 10px;font:600 13px var(--f-body)}
-.tabs button[aria-selected="true"]{color:var(--gold);border-bottom-color:var(--gold)}
+.card.help{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:14px;align-items:start}
+.card.help>.helphead{grid-column:1/-1}
+.card.help>.tabp{grid-column:2;grid-row:2}
+/* Vertical tabs: a column down the left of the help panel, pinned while the text scrolls */
+.tabs{grid-column:1;grid-row:2;position:sticky;top:0;display:flex;flex-direction:column;gap:2px;margin:12px 0 4px;border-right:1px solid var(--rule)}
+.tabs button{flex:none;text-align:left;background:transparent;border:0;border-right:2px solid transparent;color:var(--dim);padding:7px 12px 7px 0;font:600 13px var(--f-body)}
+.tabs button[aria-selected="true"]{color:var(--gold);border-right-color:var(--gold)}
+@media (max-width:430px){.card.help{column-gap:10px}.tabs button{padding-right:8px;font-size:12.5px}}
 .tabp ul{padding-left:18px;margin:12px 0;display:flex;flex-direction:column;gap:8px;font-size:14px;max-width:62ch}
 .tabp>.newg:first-child{margin-top:8px;border-top:0;padding-top:4px}
 .ref{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
@@ -190,6 +197,8 @@ body.coaching #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80p
 /* While choosing a destination the orders panel shrinks to its header, leaving the map free to tap */
 body.targeting #sheetBody{display:none}
 body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80px)}
+/* On desktop the coach strip sits over the map, beside the orders panel rather than over it */
+@media (min-width:760px){#coach{padding-left:calc(422px + env(safe-area-inset-left,0px))}}
 @media (min-width:760px){body.targeting #banner,body.coaching #banner{bottom:calc(env(safe-area-inset-bottom,0px) + 24px)}}
 .coach-target{box-shadow:0 0 0 2px var(--gold),0 0 14px 3px rgba(242,181,68,.55)!important;animation:coachPulse 1.4s ease-in-out infinite}
 @keyframes coachPulse{50%{box-shadow:0 0 0 2px var(--gold),0 0 4px 1px rgba(242,181,68,.25)}}
@@ -259,7 +268,7 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
       <div><h2 id="helpH">Gabriel's Reach</h2><div class="kicker" id="seedLine"></div></div>
       <button class="btn small" data-close="helpModal">Close</button>
     </div>
-    <div class="tabs" role="tablist">
+    <div class="tabs" role="tablist" aria-orientation="vertical">
       <button role="tab" data-tab="basics">Basics</button><button role="tab" data-tab="fleets">Fleets</button><button role="tab" data-tab="planets">Planets</button><button role="tab" data-tab="combat">Combat</button><button role="tab" data-tab="research">Research</button><button role="tab" data-tab="controls">Controls</button><button role="tab" data-tab="game">Game</button>
     </div>
     <div class="tabp" data-panel="basics">
@@ -816,8 +825,8 @@ function renderSheet(){
       const ps=planetsAt(pv,st.id).sort((a,b)=>a.id-b.id);
       $('sheetSub').textContent=`${STAR_KINDS[st.kind]} star · ${ps.length?ps.length+' '+(ps.length===1?'planet':'planets'):'no planets'}`;
       h+=mode==='galaxy'
-        ?`<div class="row"><div class="what"><span>${ps.filter(p=>p.owner<0&&p.cap>0).length} free habitable · ${ps.filter(p=>p.owner===0).length} yours</span></div><button class="btn small primary" data-act="enter">Enter system</button></div>`
-        :`<div class="row"><div class="what"><span>${vis[st.id]?'In sensor range':'Last known state'} · tap a planet</span></div><button class="btn small" data-act="exit">‹ Galaxy</button></div>`;
+        ?`<div class="row nav"><div class="what"><span>${ps.filter(p=>p.owner<0&&p.cap>0).length} free habitable · ${ps.filter(p=>p.owner===0).length} yours</span></div><button class="btn small primary" data-act="enter">Enter system</button></div>`
+        :`<div class="row nav"><div class="what"><span>${vis[st.id]?'In sensor range':'Last known state'} · tap a planet</span></div><button class="btn small" data-act="exit">‹ Galaxy</button></div>`;
       if(mode==='system'&&selPlanet!=null&&planetById(selPlanet))h+=planetCard(planetById(selPlanet));
       if(ps.length)h+=`<div class="sec"><h3>Planets${info('planets')}</h3><div class="plist">${ps.map(planetRow).join('')}</div></div>`;
     }
