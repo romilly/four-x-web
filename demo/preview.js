@@ -1,4 +1,4 @@
-// Makes the link-preview image, docs/preview.png (1200 x 630): `npm run preview`.
+// Makes the link-preview image, docs/preview.jpg (1200 x 630, a JPEG kept well under WhatsApp's reported 300 KB limit): `npm run preview`.
 // It is what chat apps, email and social sites show when someone pastes the game's link (the og:image in index.html).
 // A large galaxy, played for some turns by the rivals' own AI on every side so the empires have spread, fully charted,
 // with a title card over the left. The game's fonts come from node_modules, so no network is needed.
@@ -7,7 +7,7 @@ const fs = require('fs'), path = require('path');
 const { serveGame, GAME_URL } = require('../e2e/serve');
 
 const ROOT = path.join(__dirname, '..');
-const OUT = path.join(ROOT, 'docs', 'preview.png');
+const OUT = path.join(ROOT, 'docs', 'preview.jpg');
 const SEED = 2026, TURNS = 28;
 
 const FONTS = [
@@ -94,7 +94,7 @@ function titleCard() {
   await page.evaluate(titleCard);
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(1500);
-  await page.screenshot({ path: OUT });
+  await page.screenshot({ path: OUT, type: 'jpeg', quality: 85 });
   await browser.close();
   console.log(`Wrote ${OUT} (${Math.round(fs.statSync(OUT).size / 1024)} KB)`);
 })();

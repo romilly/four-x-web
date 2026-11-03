@@ -81,7 +81,7 @@ Plays a scripted opening and a large galaxy in a recorded browser, writing `demo
 
 ## Link preview
 
-When the game's link is pasted into a chat app, an email or a social site, it shows `docs/preview.png` with the
+When the game's link is pasted into a chat app, an email or a social site, it shows `docs/preview.jpg` with the
 description from the `og:` tags at the top of `index.html`. After a visible change to the game, remake the picture:
 
 ```

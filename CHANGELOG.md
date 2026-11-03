@@ -8,6 +8,11 @@ and at the foot of the orders panel) and is recorded in every saved game.
 The save-file format has its own number (`version` in a save); it changes only when the shape of a saved
 game changes.
 
+## 1.4.2 (2026-11-03)
+
+- The link-preview picture is now a JPEG of about 85 KB (`docs/preview.jpg`), replacing a 305 KB PNG: WhatsApp is
+  widely reported to skip preview images over about 300 KB.
+
 ## 1.4.1 (2026-11-03)
 
 - Links to the game now show a preview (a picture of a galaxy, the name and a one-line description) when pasted into
