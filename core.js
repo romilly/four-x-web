@@ -1,6 +1,6 @@
 // CORE-START — pure domain core: plain data in, plain data out. No DOM, no I/O, no clock.
 // The game's version, semantic versioning. Keep package.json and CHANGELOG.md in step (a test checks).
-const GAME_VERSION='1.3.0';
+const GAME_VERSION='1.4.0';
 // A small Easy galaxy whose home system has a poor and a rich free planet; the tutorial is played in it.
 const TUTORIAL_SEED=164;
 const TYPES=['fighter','colony','scout'];
@@ -374,7 +374,7 @@ function resolveTurn(state,ordersBy,rng){
     const need=VICTORY.dominance.share,top=left.map(e=>[e.id,dominanceOf(s,e.id)]).sort((a,b)=>b[1]-a[1]||a[0]-b[0])[0];
     if(top[1]>=need){
       s.over={win:top[0]===0,turn:s.turn,how:'dominance',by:top[0]};
-      say(top[0]===0?`You hold ${Math.round(top[1]*100)}% of the habitable planets. The Reach is yours.`:`The ${s.empires[top[0]].name} holds ${Math.round(top[1]*100)}% of the habitable planets and dominates the Reach.`,'fall');
+      say(top[0]===0?`You hold ${Math.round(top[1]*100)}% of the habitable planets. The galaxy is yours.`:`The ${s.empires[top[0]].name} holds ${Math.round(top[1]*100)}% of the habitable planets and dominates the Reach.`,'fall');
     }
   }
   // 7. Targets that no longer make sense are dropped
@@ -464,7 +464,8 @@ function aiOrders(s,e,rng){
 // ---------- saved games ----------
 // A save is plain data: a format name, a version and the whole game state, plus any orders queued but not yet run.
 // Bump SAVE_VERSION whenever the shape of the state changes, and add a migration from the old version if one is possible.
-const SAVE_FORMAT='gabriels-reach-save';
+// The game was called Gabriel's Reach until 1.4.0; saves from then carry the old format name and still load.
+const SAVE_FORMAT='gabriels-landing-save',OLD_SAVE_FORMATS=['gabriels-reach-save'];
 const SAVE_VERSION=3;
 // version n -> function turning a version-n save into a version n+1 save
 const MIGRATIONS={
@@ -480,7 +481,7 @@ function toSave(game,orders=[]){
 }
 // Returns {game,orders} or throws an Error whose message can be shown to the player as it is.
 function fromSave(d){
-  if(!d||typeof d!=='object'||Array.isArray(d)||d.format!==SAVE_FORMAT)throw new Error("This file isn't a Gabriel's Reach save.");
+  if(!d||typeof d!=='object'||Array.isArray(d)||(d.format!==SAVE_FORMAT&&!OLD_SAVE_FORMATS.includes(d.format)))throw new Error("This file isn't a Gabriel's Landing save.");
   if(!Number.isInteger(d.version))throw new Error('This save has no version, so it cannot be loaded safely.');
   if(d.version>SAVE_VERSION)throw new Error(`This save was made by a newer version of the game (save format ${d.version}; this game reads format ${SAVE_VERSION}). Reload the page to get the latest version, then try again.`);
   while(d.version<SAVE_VERSION){

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Gabriel's Reach</title>
+<title>Gabriel's Landing</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -239,7 +239,7 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
 <div id="labels"></div>
 
 <header id="hud">
-  <div class="brand">Gabriel's Reach <span class="ver" id="verHud"></span></div>
+  <div class="brand">Gabriel's Landing <span class="ver" id="verHud"></span></div>
   <div class="stat"><small>Turn</small><span id="turn">1</span></div>
   <div class="stat" title="Industry units available after queued orders"><small><span class="lg">Industry</span><span class="sm">IU</span></small><span id="iu">0</span><span class="up" id="inc">+0</span></div>
   <div class="stat" id="domStat" title="Your share of all habitable planets; 60% wins" hidden><small>Share</small><span id="dom">0%</span><span class="of">/60%</span></div>
@@ -276,7 +276,7 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
 <div class="modal" id="helpModal" hidden>
   <div class="card help" role="dialog" aria-labelledby="helpH">
     <div class="helphead">
-      <div><h2 id="helpH">Gabriel's Reach</h2><div class="kicker" id="seedLine"></div></div>
+      <div><h2 id="helpH">Gabriel's Landing</h2><div class="kicker" id="seedLine"></div></div>
       <button class="btn small" data-close="helpModal">Close</button>
     </div>
     <div class="tabs" role="tablist" aria-orientation="vertical">
@@ -409,7 +409,7 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
     <div class="tabp" data-panel="about" hidden>
       <div class="newg">
         <h3>About</h3>
-        <p class="about-title">Gabriel's Reach <span id="aboutVersion"></span></p>
+        <p class="about-title">Gabriel's Landing <span id="aboutVersion"></span></p>
         <p class="note">A small turn-based space 4X: explore a fogged, three-dimensional star cluster, settle colonies,
           research, and out-fight rival empires. Lanes join stars that are neighbours in a Gabriel graph, which gives the game its name.</p>
         <p class="note">Written test-first by Romilly Cocking with Claude. The rules live in a pure game core with its own tests; this page draws them with three.js and saves games with js-yaml.</p>
@@ -897,7 +897,7 @@ function renderSheet(){
   h+=ev.length?`<ul class="log">${ev.map(e=>`<li class="${e.kind}" ${e.star!=null?`data-star="${e.star}"`:''}>${esc(e.msg)}</li>`).join('')}</ul>`:`<p class="note">A quiet turn.</p>`;
   h+=`</div>`;
   if(st&&mode==='galaxy')h+=`<div><button class="btn small" data-act="deselect">Close</button></div>`;
-  h+=`<div class="verfoot">Gabriel's Reach v${GAME_VERSION}</div>`;
+  h+=`<div class="verfoot">Gabriel's Landing v${GAME_VERSION}</div>`;
   $('sheetBody').innerHTML=h;
   coachUpdate();
 }
@@ -1025,8 +1025,8 @@ let toLoad=null;
 const saveNote=t=>{$('saveNote').textContent=t;};
 async function saveGame(){
   if(typeof jsyaml==='undefined'){saveNote('The YAML library did not load. Check your connection and reload.');return;}
-  const text="# Gabriel's Reach saved game. Load it from the ? panel with Load a save.\n"+jsyaml.dump(toSave(game,pending),SAVE_YAML);
-  const base=`gabriels-reach-${game.seed}-turn-${game.turn}`;
+  const text="# Gabriel's Landing saved game. Load it from the ? panel with Load a save.\n"+jsyaml.dump(toSave(game,pending),SAVE_YAML);
+  const base=`gabriels-landing-${game.seed}-turn-${game.turn}`;
   if(window.claude?.use){
     const dl=await window.claude.use('downloads');
     if(!dl){saveNote('Saving files is not available in this view. Open the game in a browser to save.');return;}
@@ -1083,11 +1083,11 @@ function showOver(){
   const list=left.length>1?left.slice(0,-1).join(', ')+' and '+left[left.length-1]:left[0];
   const where=`${sizeOf(game).label.toLowerCase()} galaxy on ${diffOf(game).label}`;
   if(o.how==='dominance'){
-    $('overH').textContent=o.win?'The Reach is yours':`The ${game.empires[o.by].name} dominates`;
+    $('overH').textContent=o.win?'The galaxy is yours':`The ${game.empires[o.by].name} dominates`;
     $('overText').textContent=o.win?`You held 60% of the habitable planets by turn ${o.turn}, in a ${where}. Galaxy ${game.seed} can be replayed from its seed.`:
       `The ${game.empires[o.by].name} held 60% of the habitable planets on turn ${o.turn}, before you could.`;
   }else{
-    $('overH').textContent=o.win?'The Reach is yours':'The Concord has fallen';
+    $('overH').textContent=o.win?'The galaxy is yours':'The Concord has fallen';
     $('overText').textContent=o.win?`Every rival was broken by turn ${o.turn}, in a ${where}. Galaxy ${game.seed} can be replayed from its seed.`:
       `Your last colony fell on turn ${o.turn}. ${list} ${left.length>1?'hold':'holds'} the cluster.`;
   }

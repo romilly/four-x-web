@@ -1,4 +1,4 @@
-# Gabriel's Reach
+# Gabriel's Landing
 
 A small turn-based space 4X in the browser, rendered with three.js.
 Explore a fogged, three-dimensional star cluster, split and merge fleets, settle colonies,
@@ -76,5 +76,5 @@ through GitHub Actions (`.github/workflows/test.yml`).
 npm run demo
 ```
 
-Plays a scripted opening and a large galaxy in a recorded browser, writing `demo-output/gabriels-reach.webm`
+Plays a scripted opening and a large galaxy in a recorded browser, writing `demo-output/gabriels-landing.webm`
 (and an `.mp4` and `.gif` when `ffmpeg` is installed). `docs/demo.gif` at the top of this page was made this way.

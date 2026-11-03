@@ -1,6 +1,6 @@
-// Records a short demo of Gabriel's Reach: `npm run demo`.
+// Records a short demo of Gabriel's Landing: `npm run demo`.
 // Plays a scripted opening in the tutorial galaxy, then shows a large galaxy, recording the browser as it goes.
-// Writes demo-output/gabriels-reach.webm; with ffmpeg installed, also an .mp4 and a small .gif for the README.
+// Writes demo-output/gabriels-landing.webm; with ffmpeg installed, also an .mp4 and a small .gif for the README.
 const { chromium } = require('@playwright/test');
 const { execFileSync } = require('child_process');
 const fs = require('fs'), path = require('path');
@@ -73,12 +73,12 @@ function showTaps() {
 
   const video = page.video();
   await context.close(); await browser.close();
-  const webm = path.join(OUT, 'gabriels-reach.webm');
+  const webm = path.join(OUT, 'gabriels-landing.webm');
   fs.renameSync(await video.path(), webm);
   console.log('Wrote', webm);
 
   try { execFileSync('ffmpeg', ['-version'], { stdio: 'ignore' }); } catch { console.log('ffmpeg not found: skipping .mp4 and .gif'); return; }
-  const mp4 = path.join(OUT, 'gabriels-reach.mp4'), gif = path.join(OUT, 'gabriels-reach.gif');
+  const mp4 = path.join(OUT, 'gabriels-landing.mp4'), gif = path.join(OUT, 'gabriels-landing.gif');
   execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', webm, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', mp4]);
   execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', webm, '-vf',
     'fps=7,scale=560:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=64:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle', gif]);

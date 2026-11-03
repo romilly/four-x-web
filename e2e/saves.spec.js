@@ -10,7 +10,7 @@ test('a game saved as YAML loads back exactly', async ({ page }, info) => {
   const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#saveBtn').click()]);
   const file = info.outputPath(download.suggestedFilename());
   await download.saveAs(file);
-  expect(fs.readFileSync(file, 'utf8')).toMatch(/^format: gabriels-reach-save$/m);
+  expect(fs.readFileSync(file, 'utf8')).toMatch(/^format: gabriels-landing-save$/m);
 
   await page.locator('#helpModal [data-diff="easy"]').click();
   await page.locator('#helpModal [data-diff="easy"]').click();
@@ -31,9 +31,9 @@ test('files that are not saves, or come from a newer version, are refused with a
   const notes = info.outputPath('notes.yaml');
   fs.writeFileSync(notes, 'shopping:\n  - eggs\n');
   await page.locator('#loadFile').setInputFiles(notes);
-  await expect(page.locator('#saveNote')).toHaveText("This file isn't a Gabriel's Reach save.");
+  await expect(page.locator('#saveNote')).toHaveText("This file isn't a Gabriel's Landing save.");
   const future = info.outputPath('future.yaml');
-  fs.writeFileSync(future, 'format: gabriels-reach-save\nversion: 99\ngame: {}\n');
+  fs.writeFileSync(future, 'format: gabriels-landing-save\nversion: 99\ngame: {}\n');
   await page.locator('#loadFile').setInputFiles(future);
   await expect(page.locator('#saveNote')).toContainText('newer version of the game');
 });

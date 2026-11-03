@@ -9,7 +9,7 @@ test('after a win, New game… opens the Game tab and starts a game without aski
     return g;
   }));
   await page.locator('#end').click();
-  await expect(page.locator('#overH')).toHaveText('The Reach is yours');
+  await expect(page.locator('#overH')).toHaveText('The galaxy is yours');
   await expect(page.locator('#overModal [data-diff]')).toHaveCount(0);
   await page.locator('#overNew').click();
   await expect(page.locator('#overModal')).toBeHidden();

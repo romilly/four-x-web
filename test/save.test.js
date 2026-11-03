@@ -17,6 +17,7 @@ const broken = (mutate) => { const d = yaml.load(asYaml(played(2))); mutate(d); 
 
 test('a save names its format and version', () => {
   const d = g.toSave(g.newGame(1));
+  assert.equal(d.format, 'gabriels-landing-save');
   assert.equal(d.format, g.SAVE_FORMAT);
   assert.equal(d.version, g.SAVE_VERSION);
 });
@@ -34,10 +35,16 @@ test('a loaded game plays on exactly as the original would', () => {
   assert.deepEqual(next(back), next(s));
 });
 
+test('saves made before the game was renamed still load', () => {
+  const s = played(), d = yaml.load(asYaml(s));
+  d.format = 'gabriels-reach-save';
+  assert.deepEqual(g.fromSave(d).game, s);
+});
+
 test('files that are not saves are refused', () => {
-  assert.throws(() => g.fromSave(null), /isn't a Gabriel's Reach save/);
-  assert.throws(() => g.fromSave({ hello: 'world' }), /isn't a Gabriel's Reach save/);
-  assert.throws(() => g.fromSave(yaml.load('- just\n- a list\n')), /isn't a Gabriel's Reach save/);
+  assert.throws(() => g.fromSave(null), /isn't a Gabriel's Landing save/);
+  assert.throws(() => g.fromSave({ hello: 'world' }), /isn't a Gabriel's Landing save/);
+  assert.throws(() => g.fromSave(yaml.load('- just\n- a list\n')), /isn't a Gabriel's Landing save/);
 });
 
 test('saves from a newer version are refused with a clear reason', () => {

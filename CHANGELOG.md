@@ -1,12 +1,19 @@
 # Changelog
 
-Gabriel's Reach follows [semantic versioning](https://semver.org/): MAJOR.MINOR.PATCH.
+Gabriel's Landing follows [semantic versioning](https://semver.org/): MAJOR.MINOR.PATCH.
 A PATCH release fixes bugs, a MINOR release adds features, and a MAJOR release changes the game in ways
 that old saves or habits may not survive. The version shows in the page header (on phones, in the ? panel
 and at the foot of the orders panel) and is recorded in every saved game.
 
 The save-file format has its own number (`version` in a save); it changes only when the shape of a saved
 game changes.
+
+## 1.4.0 (2026-11-03)
+
+- The game is now called **Gabriel's Landing** (it was Gabriel's Reach, a name already used by another game).
+  New saves are marked `gabriels-landing-save` and named `gabriels-landing-….yaml`; saves made under the old name
+  still load, and games in progress in your browser carry on as before.
+- Winning now says "The galaxy is yours".
 
 ## 1.3.0 (2026-11-02)
 

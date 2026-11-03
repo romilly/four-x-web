@@ -1,4 +1,4 @@
-// Browser tests for Gabriel's Reach. Run with `npm run e2e`.
+// Browser tests for Gabriel's Landing. Run with `npm run e2e`.
 // The game is served from local files, with its CDN libraries (three.js, js-yaml) answered from node_modules,
 // so the tests need no web server and no network.
 const { defineConfig, devices } = require('@playwright/test');
