@@ -78,3 +78,14 @@ npm run demo
 
 Plays a scripted opening and a large galaxy in a recorded browser, writing `demo-output/gabriels-landing.webm`
 (and an `.mp4` and `.gif` when `ffmpeg` is installed). `docs/demo.gif` at the top of this page was made this way.
+
+## Link preview
+
+When the game's link is pasted into a chat app, an email or a social site, it shows `docs/preview.png` with the
+description from the `og:` tags at the top of `index.html`. After a visible change to the game, remake the picture:
+
+```
+npm run preview
+```
+
+It uses the game's own fonts from `node_modules`, so it needs no network.

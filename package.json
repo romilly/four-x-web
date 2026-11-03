@@ -1,15 +1,19 @@
 {
   "name": "four-x-web",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "private": true,
   "description": "Gabriel's Landing, a small three.js space 4X",
   "scripts": {
     "test": "node --test \"test/*.test.js\"",
     "e2e": "playwright test",
     "test:all": "npm test && playwright test",
-    "demo": "node demo/record.js"
+    "demo": "node demo/record.js",
+    "preview": "node demo/preview.js"
   },
   "devDependencies": {
+    "@fontsource/ibm-plex-mono": "5.2.7",
+    "@fontsource/ibm-plex-sans-condensed": "5.2.8",
+    "@fontsource/michroma": "5.2.8",
     "@playwright/test": "1.63.0",
     "js-yaml": "4.1.0",
     "three": "0.128.0"

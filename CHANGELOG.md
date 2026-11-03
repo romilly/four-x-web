@@ -8,6 +8,11 @@ and at the foot of the orders panel) and is recorded in every saved game.
 The save-file format has its own number (`version` in a save); it changes only when the shape of a saved
 game changes.
 
+## 1.4.1 (2026-11-03)
+
+- Links to the game now show a preview (a picture of a galaxy, the name and a one-line description) when pasted into
+  chat apps, email or social sites. The picture is `docs/preview.png`, made by `npm run preview`.
+
 ## 1.4.0 (2026-11-03)
 
 - The game is now called **Gabriel's Landing** (it was Gabriel's Reach, a name already used by another game).
