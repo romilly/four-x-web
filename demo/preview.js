@@ -1,7 +1,8 @@
 // Makes the link-preview image, docs/preview.jpg (1200 x 630, a JPEG kept well under WhatsApp's reported 300 KB limit): `npm run preview`.
 // It is what chat apps, email and social sites show when someone pastes the game's link (the og:image in index.html).
-// A large galaxy, played for some turns by the rivals' own AI on every side so the empires have spread, fully charted,
-// with a title card over the left. The game's fonts come from node_modules, so no network is needed.
+// A medium galaxy, played for some turns by the rivals' own AI on every side so the empires have spread, fully charted,
+// with the title above it. WhatsApp shows the image as a square cut from the middle (x 285 to 915), so the title
+// and the whole cluster stay inside that square; the wide image just shows more starfield either side. The game's fonts come from node_modules, so no network is needed.
 const { chromium } = require('@playwright/test');
 const fs = require('fs'), path = require('path');
 const { serveGame, GAME_URL } = require('../e2e/serve');
@@ -21,7 +22,7 @@ const fontCss = FONTS.map(([family, weight, file]) =>
 
 // Runs in the page: a galaxy several turns in, with everything charted so stars show their names.
 function setUp({ SEED, TURNS }) {
-  let s = newGame(SEED, 'normal', 'large');
+  let s = newGame(SEED, 'normal', 'medium');
   const rng = makeRng(s.rngState);
   for (let t = 0; t < TURNS && !s.over; t++) {
     const orders = {};
@@ -34,27 +35,25 @@ function setUp({ SEED, TURNS }) {
   localStorage.setItem('gr-save-3', JSON.stringify({ game: s, pending: [] }));
 }
 
-// Runs in the page: hides the interface and lays a title card over the left of the map.
+// Runs in the page: hides the interface and puts the title across the top, centred.
 function titleCard() {
   for (const id of ['hud', 'sheet']) document.getElementById(id).style.display = 'none';
   const card = document.createElement('div');
-  card.innerHTML = `
-    <div class="k">A turn-based space 4X · free in your browser</div>
-    <h1>Gabriel's<br>Landing</h1>
-    <p>Explore a three-dimensional star cluster. Settle colonies, research, and out-fight up to six rival empires.</p>
-    <div class="u">romilly.github.io/four-x-web</div>`;
-  card.style.cssText = 'position:fixed;inset:0 auto 0 0;width:640px;z-index:30;display:flex;flex-direction:column;justify-content:center;' +
-    'padding:0 0 0 64px;background:linear-gradient(90deg,#060913 0%,#060913 55%,rgba(6,9,19,.75) 78%,rgba(6,9,19,0) 100%);pointer-events:none';
+  card.id = 'pv';
+  card.innerHTML = `<h1>Gabriel's<br>Landing</h1><div class="k">A space 4X · free in your browser</div>`;
+  card.style.cssText = 'position:fixed;left:0;right:0;top:0;height:215px;z-index:30;display:flex;flex-direction:column;align-items:center;' +
+    'justify-content:flex-start;padding-top:30px;text-align:center;pointer-events:none;' +
+    'background:linear-gradient(180deg,#060913 0%,#060913 80%,rgba(6,9,19,0) 100%)';
   const style = document.createElement('style');
   style.textContent = `
-    #pv .k{font:500 15px 'IBM Plex Mono',monospace;letter-spacing:.06em;color:#8d97b5}
-    #pv h1{margin:22px 0 26px;font:400 58px/1.12 Michroma,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#f2b544}
-    #pv p{margin:0;max-width:430px;font:400 24px/1.4 'IBM Plex Sans Condensed',sans-serif;color:#e6e9f2}
-    #pv .u{margin-top:34px;font:500 16px 'IBM Plex Mono',monospace;color:#4fd1c5}`;
-  card.id = 'pv';
+    #pv h1{margin:0 0 12px;font:400 48px/1.18 Michroma,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#f2b544}
+    #pv .k{font:500 17px 'IBM Plex Mono',monospace;letter-spacing:.04em;color:#8d97b5}`;
   document.head.appendChild(style);
   document.body.appendChild(card);
 }
+
+// The square WhatsApp keeps, with a margin: everything that matters must fall inside it.
+const SAFE = { x0: 315, x1: 885 };
 
 (async () => {
   const browser = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
@@ -71,27 +70,31 @@ function titleCard() {
   await page.evaluate(setUp, { SEED, TURNS });
   await page.reload();
   await page.waitForFunction(() => document.querySelectorAll('.lbl').length > 0);
-  // Zoom out and pan with the game's own mouse controls until the whole cluster sits in the right-hand part of the image.
+  // Zoom out and pan with the game's own mouse controls until the whole cluster sits below the title, in the middle.
   const labels = () => page.evaluate(() => {
     const r = [...document.querySelectorAll('.lbl')].map(l => l.getBoundingClientRect()).filter(r => r.width);
     const x = r.map(b => b.x + b.width / 2), y = r.map(b => b.y);
     return { x0: Math.min(...x), x1: Math.max(...x), y0: Math.min(...y), y1: Math.max(...y) };
   });
-  await page.mouse.move(900, 315);
-  for (let i = 0; i < 40; i++) {
-    const b = await labels();
-    if (b.x1 - b.x0 < 470 && b.y1 - b.y0 < 460) break;
-    await page.mouse.wheel(0, 120);
-    await page.waitForTimeout(120);
+  await page.mouse.move(600, 420);
+  // Zoom all the way out (the game caps how far), then pan the cluster to the middle, below the title.
+  // The camera eases into each move, so wait for it to settle before measuring. Off-screen labels are not counted.
+  await page.mouse.move(600, 420);
+  for (let i = 0; i < 40; i++) { await page.mouse.wheel(0, 120); await page.waitForTimeout(60); }
+  await page.waitForTimeout(1500);
+  for (let i = 0; i < 5; i++) {
+    const b = await labels(), dx = 600 - (b.x0 + b.x1) / 2, dy = 412 - (b.y0 + b.y1) / 2;
+    if (process.env.DEBUG) console.log('frame', i, JSON.stringify(b));
+    if (Math.abs(dx) < 6 && Math.abs(dy) < 6) break;
+    await page.mouse.move(600, 315); await page.mouse.down();
+    await page.mouse.move(600 + dx, 315 + dy, { steps: 12 }); await page.mouse.up();
+    await page.waitForTimeout(1000);
   }
-  for (let i = 0; i < 4; i++) {
-    const b = await labels(), dx = 890 - (b.x0 + b.x1) / 2, dy = 320 - (b.y0 + b.y1) / 2;
-    if (Math.abs(dx) < 8 && Math.abs(dy) < 8) break;
-    await page.mouse.move(700, 315); await page.mouse.down();
-    await page.mouse.move(700 + dx, 315 + dy, { steps: 12 }); await page.mouse.up();
-    await page.waitForTimeout(400);
-  }
+  const b = await labels();
+  if (b.x0 < SAFE.x0 || b.x1 > SAFE.x1 || b.y0 < 215 || b.y1 > 605) throw new Error(`the cluster does not fit the square crop: ${JSON.stringify(b)}`);
   await page.evaluate(titleCard);
+  const t = await page.evaluate(() => { const r = document.querySelector('#pv h1').getBoundingClientRect(); return { x0: r.x, x1: r.right }; });
+  if (t.x0 < SAFE.x0 || t.x1 > SAFE.x1) throw new Error(`the title does not fit the square crop: ${JSON.stringify(t)}`);
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(1500);
   await page.screenshot({ path: OUT, type: 'jpeg', quality: 85 });

@@ -8,6 +8,11 @@ and at the foot of the orders panel) and is recorded in every saved game.
 The save-file format has its own number (`version` in a save); it changes only when the shape of a saved
 game changes.
 
+## 1.4.3 (2026-11-03)
+
+- The link-preview picture is redesigned for WhatsApp, which shows it as a small square cut from the middle: the
+  title now sits centred above a medium galaxy, so both survive the crop. Other sites still show the full wide picture.
+
 ## 1.4.2 (2026-11-03)
 
 - The link-preview picture is now a JPEG of about 85 KB (`docs/preview.jpg`), replacing a 305 KB PNG: WhatsApp is
