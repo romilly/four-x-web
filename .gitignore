@@ -2,3 +2,5 @@ node_modules/
 test-results/
 playwright-report/
 demo-output/
+__pycache__/
+.pytest_cache/

@@ -1,0 +1,12 @@
+{
+  "size": "small",
+  "galaxies": 48,
+  "turns": 200,
+  "variants": {
+    "Easy": {"base": "easy"},
+    "Normal": {"base": "normal"},
+    "Hard today (125%)": {"base": "hard"},
+    "Hard at 110%": {"base": "hard", "income": 1.1},
+    "Proposed Hard (100%)": {"base": "hard", "income": 1.0}
+  }
+}

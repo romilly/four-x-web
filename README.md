@@ -55,7 +55,8 @@ CHANGELOG entry (a test checks all three agree), then tag the commit, e.g. `git 
 - `index.html` — the three.js renderer and the interface, an adapter over the core.
 - `test/` — tests for the core.
 - `e2e/` — browser tests (Playwright), with `serve.js` serving the game locally.
-- `demo/` — the demo recorder.
+- `demo/` — the demo recorder and the link-preview picture maker.
+- `sim/` — balance simulations (`balance.js`) and their Python wrapper (`balance.py`).
 
 ## Test
 
@@ -69,6 +70,47 @@ Needs Node 18 or later. For the browser tests, install Playwright's Chromium onc
 `npx playwright install chromium`. The browser tests serve the game from this folder and answer its CDN
 libraries from `node_modules`, so they need no web server and no network. Both suites run on every push
 through GitHub Actions (`.github/workflows/test.yml`).
+
+## Balance simulations
+
+`sim/` plays many galaxies with a scripted stand-in on your side, to compare difficulty settings. The stand-in
+is the rivals' own AI, playing with fog of war and Normal habits, so the results compare variants with each
+other; they don't predict how a person will fare. Games are seeded, so the same settings always give the same
+results. It needs only Node 18 or later (no `npm install`); the Python wrapper also needs pandas.
+
+**From Python or Jupyter.** Start Python or Jupyter in this folder (or a folder below it), then either
+`import sys; sys.path.insert(0, 'sim')` and `from balance import run_balance, summarise`, or paste the whole of
+`sim/balance.py` into a notebook cell:
+
+```python
+df = run_balance({
+    'Normal':    {'base': 'normal'},
+    'Hard 100%': {'base': 'hard', 'income': 1.0},
+    'Hard 125%': {'base': 'hard'},
+}, size='small', galaxies=48, turns=200)
+summarise(df)
+```
+
+- A variant is a base level (`easy`, `normal` or `hard`) plus any of its settings to override: `fog`
+  (rivals' fog of war), `attackTurn` (earliest attack), `shipShare` (share of IU left after research and
+  colony ships that goes on fighters) and `income` (rivals' income multiplier). See `DIFF` in `core.js`.
+- `run_balance` returns one row per game: `variant`, `seed`, `size`, `result` (`win`, `loss` or
+  `unfinished`), `end_turn`, `biggest_rival_fleet`, and at turns 30, 60 and 120 the stand-in's share of
+  habitable planets (`share_60`), its income (`income_60`) and the best rival's (`best_rival_income_60`).
+  These are empty once the game has ended or the stand-in has fallen.
+- Other arguments: `seeds=[...]` to choose galaxies (default 1000, 1037, 1074, ...), `victory='dominance'`,
+  and `repo='path/to/four-x-web'` if Python is running somewhere else.
+- `summarise(df)` counts wins, losses and unfinished games per variant with the win rate and its standard
+  error. Differences smaller than about two standard errors are likely to be chance: with 48 galaxies and a
+  30% win rate, that is about 6 or 7 wins.
+- Each variant runs in its own Node process, in parallel. Three variants of 48 small galaxies take about
+  20 seconds; medium and large galaxies take longer.
+
+**From the shell.** `node sim/balance.js sim/example.json` reads a spec (a file, or JSON on stdin) and
+prints one JSON line per game; `sim/example.json` holds the comparison behind the current difficulty
+discussion. The spec's fields are listed at the top of `sim/balance.js`.
+
+**Tests.** `npm test` covers the simulator; `python -m pytest sim` checks the Python wrapper.
 
 ## Demo
 
