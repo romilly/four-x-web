@@ -4,11 +4,11 @@ Runs sim/balance.js (which plays the real game core, core.js) once per variant, 
 row per game as a pandas DataFrame. Needs Node 18 or later on the PATH, and pandas. Import it, or paste the
 whole file into a notebook cell.
 
-    df = run_balance({'Hard 100%': {'base': 'hard', 'income': 1.0},
-                      'Hard 125%': {'base': 'hard'}}, galaxies=48)
+    df = run_balance({'Hard': {'base': 'hard'},
+                      'Hard 110%': {'base': 'hard', 'income': 1.1}}, galaxies=48)
     summarise(df)
 
-A variant is a base difficulty ('easy', 'normal' or 'hard') plus any settings to override: fog, attackTurn,
+A variant is a base difficulty ('easy', 'normal', 'hard' or 'impossible') plus any settings to override: fog, attackTurn,
 shipShare, income (see DIFF in core.js). The player's side is played by a scripted stand-in, the rivals' own
 AI with fog of war and Normal habits, so compare variants with each other rather than reading the numbers as
 a person's chances.

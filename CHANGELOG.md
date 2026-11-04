@@ -8,6 +8,18 @@ and at the foot of the orders panel) and is recorded in every saved game.
 The save-file format has its own number (`version` in a save); it changes only when the shape of a saved
 game changes.
 
+## 1.5.0 (2026-11-04)
+
+- A new difficulty, **Impossible**, has the old Hard settings: rivals see the whole map, may attack from turn 6,
+  put 80% of their spare IU into fighters and earn 125% of what you would.
+- **Hard** is now Normal without fog of war: rivals see the whole map but earn the same as you. Extra income
+  compounds, so the old Hard was far harder than intended. Games in progress on Hard carry on under the new Hard.
+- Balance simulations (`sim/`, 192 small galaxies per level, a scripted stand-in on your side) show the stand-in
+  winning about 31% of games on Normal, 15% on Hard and 8% on Impossible. A person who defends and masses fleets
+  should do better than the stand-in.
+- The Game tab describes all four levels accurately; it used to say Hard rivals spent more of their income on
+  fighters, which was misleading.
+
 ## 1.4.3 (2026-11-03)
 
 - The link-preview picture is redesigned for WhatsApp, which shows it as a small square cut from the middle: the

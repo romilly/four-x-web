@@ -20,6 +20,13 @@ this repository; it loads three.js and js-yaml from CDNs, so it needs a connecti
 
 Under **?** → Game, choose a galaxy size and a victory condition, then tap a difficulty to start.
 
+| Difficulty | Rivals |
+|---|---|
+| Easy | Fog of war like yours; attack late; earn 75% of what you would |
+| Normal | Your equals: fog of war like yours, the same income |
+| Hard | As Normal, but they see the whole map |
+| Impossible | See the whole map, attack early, put 80% of their spare IU into fighters, earn 125% |
+
 | Size | Stars | Empires |
 |---|---|---|
 | Small | 28 | 3 |
@@ -84,14 +91,15 @@ results. It needs only Node 18 or later (no `npm install`); the Python wrapper a
 
 ```python
 df = run_balance({
-    'Normal':    {'base': 'normal'},
-    'Hard 100%': {'base': 'hard', 'income': 1.0},
-    'Hard 125%': {'base': 'hard'},
+    'Normal':     {'base': 'normal'},
+    'Hard':       {'base': 'hard'},
+    'Hard 110%':  {'base': 'hard', 'income': 1.1},
+    'Impossible': {'base': 'impossible'},
 }, size='small', galaxies=48, turns=200)
 summarise(df)
 ```
 
-- A variant is a base level (`easy`, `normal` or `hard`) plus any of its settings to override: `fog`
+- A variant is a base level (`easy`, `normal`, `hard` or `impossible`) plus any of its settings to override: `fog`
   (rivals' fog of war), `attackTurn` (earliest attack), `shipShare` (share of IU left after research and
   colony ships that goes on fighters) and `income` (rivals' income multiplier). See `DIFF` in `core.js`.
 - `run_balance` returns one row per game: `variant`, `seed`, `size`, `result` (`win`, `loss` or
@@ -110,8 +118,8 @@ summarise(df)
   20 seconds; medium and large galaxies take longer.
 
 **From the shell.** `node sim/balance.js sim/example.json` reads a spec (a file, or JSON on stdin) and
-prints one JSON line per game; `sim/example.json` holds the comparison behind the current difficulty
-discussion. The spec's fields are listed at the top of `sim/balance.js`.
+prints one JSON line per game; `sim/example.json` compares the four levels, and Hard with each of
+Impossible's settings added in turn. The spec's fields are listed at the top of `sim/balance.js`.
 
 **Tests.** `npm test` covers the simulator; `python -m pytest sim` checks the Python wrapper.
 

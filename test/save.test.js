@@ -64,6 +64,6 @@ test('damaged saves are refused instead of breaking the game', () => {
   assert.throws(broken(d => { d.game.planets[0].type = 'lava'; }), /damaged.*planet/);
   assert.throws(broken(d => { d.game.lanes.push([0, 500]); }), /damaged.*lane/);
   assert.throws(broken(d => { d.game.empires.pop(); }), /damaged.*empires/);
-  assert.throws(broken(d => { d.game.difficulty = 'impossible'; }), /damaged.*difficulty/);
+  assert.throws(broken(d => { d.game.difficulty = 'brutal'; }), /damaged.*difficulty/);
   assert.throws(broken(d => { d.orders = [{ t: 'teleport' }]; }), /damaged.*order/);
 });

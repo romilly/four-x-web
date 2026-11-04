@@ -3,10 +3,29 @@
   "galaxies": 48,
   "turns": 200,
   "variants": {
-    "Easy": {"base": "easy"},
-    "Normal": {"base": "normal"},
-    "Hard today (125%)": {"base": "hard"},
-    "Hard at 110%": {"base": "hard", "income": 1.1},
-    "Proposed Hard (100%)": {"base": "hard", "income": 1.0}
+    "Easy": {
+      "base": "easy"
+    },
+    "Normal": {
+      "base": "normal"
+    },
+    "Hard": {
+      "base": "hard"
+    },
+    "Hard, attack turn 6": {
+      "base": "hard",
+      "attackTurn": 6
+    },
+    "Hard, 80% fighters": {
+      "base": "hard",
+      "shipShare": 0.8
+    },
+    "Hard, 125% income": {
+      "base": "hard",
+      "income": 1.25
+    },
+    "Impossible": {
+      "base": "impossible"
+    }
   }
 }

@@ -137,9 +137,17 @@ test('rivals remember planets as last seen', () => {
   assert.equal(before.owner, 1, 'live view wins inside sensor range');
 });
 
-test('hard rivals see the whole map', () => {
-  const s = g.newGame(5, 'hard');
-  assert.equal(g.sightOf(s, 1), s);
+test('hard and impossible rivals see the whole map; easy and normal rivals have fog of war', () => {
+  for (const d of ['hard', 'impossible']) { const s = g.newGame(5, d); assert.equal(g.sightOf(s, 1), s, d); }
+  for (const d of ['easy', 'normal']) { const s = g.newGame(5, d); assert.notEqual(g.sightOf(s, 1), s, d); }
+});
+
+test('the levels, easiest first: Hard is Normal without fog; only Impossible earns more than you', () => {
+  assert.deepEqual(Object.keys(g.DIFF), ['easy', 'normal', 'hard', 'impossible']);
+  const { label: _n, ...normal } = g.DIFF.normal, { label: _h, ...hard } = g.DIFF.hard;
+  assert.deepEqual(hard, { ...normal, fog: false });
+  assert.deepEqual(g.DIFF.impossible, { label: 'Impossible', fog: false, attackTurn: 6, shipShare: 0.8, income: 1.25 });
+  assert.ok(Object.values(g.DIFF).every(d => d.income <= 1 || d === g.DIFF.impossible));
 });
 
 function selfPlay(seed, difficulty, turns = 150) {
@@ -161,11 +169,11 @@ test('self-play runs to completion and empires spread over many planets', () => 
 
 test('difficulty levels rank in order for a scripted stand-in', () => {
   // Planet games rarely finish inside 120 turns, so compare how much of the galaxy the stand-in holds.
-  // 24 galaxies: with fewer, Normal and Hard can tie by chance.
+  // 24 galaxies: with fewer, neighbouring levels can tie by chance.
   const many = Array.from({ length: 24 }, (_, i) => 1000 + i * 37);
   const held = d => many.reduce((n, seed) => n + selfPlay(seed, d, 120).planets.filter(p => p.owner === 0).length, 0);
-  const easy = held('easy'), normal = held('normal'), hard = held('hard');
-  assert.ok(easy > normal && normal > hard, `easy ${easy}, normal ${normal}, hard ${hard}`);
+  const easy = held('easy'), normal = held('normal'), hard = held('hard'), impossible = held('impossible');
+  assert.ok(easy > normal && normal > hard && hard > impossible, `easy ${easy}, normal ${normal}, hard ${hard}, impossible ${impossible}`);
 });
 
 // Two colony ships in one fleet, two free planets in the system.
@@ -295,7 +303,7 @@ function richRival(difficulty, credits) {
 const fightersOrdered = (s, e) => g.aiOrders(s, e, g.makeRng(1)).filter(o => o.t === 'build' && o.kind === 'fighter').length;
 
 test('a rival spends at most its difficulty\'s share of its IU on fighters', () => {
-  for (const d of ['easy', 'normal', 'hard']) {
+  for (const d of ['easy', 'normal', 'hard', 'impossible']) {
     const { s, e } = richRival(d, 300);
     const n = fightersOrdered(s, e);
     assert.ok(n * g.COST.fighter <= 300 * g.DIFF[d].shipShare, `${d}: ${n} fighters`);
@@ -310,6 +318,7 @@ test('richer rivals build bigger fleets: there is no fixed number per turn', () 
   assert.ok(big > small && big > 3, `${small} then ${big}`);
 });
 
-test('harder rivals spend a larger share on fighters', () => {
-  assert.ok(g.DIFF.easy.shipShare <= g.DIFF.normal.shipShare && g.DIFF.normal.shipShare < g.DIFF.hard.shipShare);
+test('impossible rivals spend the largest share on fighters', () => {
+  const others = ['easy', 'normal', 'hard'].map(d => g.DIFF[d].shipShare);
+  assert.ok(others.every(x => x < g.DIFF.impossible.shipShare));
 });

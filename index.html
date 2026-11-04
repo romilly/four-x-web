@@ -162,7 +162,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .diffs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .diffs .btn.armed{background:var(--alarm);border-color:var(--alarm);color:var(--gold-ink)}
 #diffNote,#saveNote,#loadSummary{margin-top:8px;font-size:12.5px}
-.diffs.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.diffs.two,.diffs.levels{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (min-width:760px){.diffs.levels{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .confirm{margin-top:8px;padding:10px;border:1px solid var(--gold);border-radius:8px}
 .confirm #loadSummary{margin:0 0 8px;color:var(--ink)}
 .lbl .sub{font-size:10px;color:var(--dim)}
@@ -409,10 +410,10 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
         <button role="radio" data-val="total">Total<i>last empire standing</i></button><button role="radio" data-val="dominance">Dominance<i>hold 60% of habitable planets</i></button>
       </div></div>
       <div class="pl" style="margin:10px 0 6px">Difficulty: tap to start</div>
-      <div class="diffs" data-confirm="1">
-        <button class="btn" data-diff="easy">Easy</button><button class="btn" data-diff="normal">Normal</button><button class="btn" data-diff="hard">Hard</button>
+      <div class="diffs levels" data-confirm="1">
+        <button class="btn" data-diff="easy">Easy</button><button class="btn" data-diff="normal">Normal</button><button class="btn" data-diff="hard">Hard</button><button class="btn" data-diff="impossible">Impossible</button>
       </div>
-      <p class="note" id="diffNote">Easy rivals attack late and earn less. Hard rivals see the whole map, strike early, earn more and spend more of their income on fighters.</p>
+      <p class="note" id="diffNote">Easy rivals attack late and earn less. Normal rivals are your equals, with fog of war like yours. Hard rivals are the same, but see the whole map. Impossible rivals see the whole map, attack early, put most of their spare IU into fighters and earn a quarter more than you.</p>
     </div>
       <div class="newg">
         <h3>Tutorial</h3>
@@ -985,7 +986,7 @@ $('techList').addEventListener('click',e=>{
 });
 $('techBtn').onclick=()=>{if(tut)tut.sawTech=true;renderTech();$('techModal').hidden=false;coachUpdate();};
 $('helpBtn').onclick=()=>openHelp(tut?'basics':'basics');
-const DIFF_NOTE='Easy rivals attack late and earn less. Hard rivals see the whole map, strike early, earn more and spend more of their income on fighters.';
+const DIFF_NOTE='Easy rivals attack late and earn less. Normal rivals are your equals, with fog of war like yours. Hard rivals are the same, but see the whole map. Impossible rivals see the whole map, attack early, put most of their spare IU into fighters and earn a quarter more than you.';
 const info=tab=>`<button class="info" data-help="${tab}" aria-label="Help on ${tab}">i</button>`;
 function renderStatus(){
   const rows=empireStatus(game),n=(k,v,label)=>`<div><dt>${label}</dt><dd data-k="${k}">${v}</dd></div>`;

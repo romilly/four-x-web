@@ -10,7 +10,7 @@
 //   seeds      the galaxy seeds, instead of 1000, 1037, 1074, ... (optional)
 //   turns      stop unfinished games after this many turns        (default 200)
 //   victory    'total' | 'dominance'                              (default 'total')
-//   variants   { name: { base: 'easy'|'normal'|'hard', ...overrides of that level's settings } }
+//   variants   { name: { base: 'easy'|'normal'|'hard'|'impossible', ...overrides of that level's settings } }
 // The settings are those in DIFF in core.js: fog, attackTurn, shipShare, income.
 const g = require('../core.js');
 
@@ -25,7 +25,8 @@ function check(spec) {
   if (!variants.length) throw new Error('give at least one variant, e.g. {"Hard": {"base": "hard"}}');
   for (const [name, v] of variants) {
     const base = v.base ?? 'normal';
-    if (!g.DIFF[base] || base === TRIAL) throw new Error(`variant "${name}": base "${base}" is unknown; use easy, normal or hard`);
+    const levels = Object.keys(g.DIFF).filter(k => k !== TRIAL);
+    if (!levels.includes(base)) throw new Error(`variant "${name}": base "${base}" is unknown; use ${levels.slice(0, -1).join(', ')} or ${levels.at(-1)}`);
     const settings = Object.keys(g.DIFF[base]).filter(k => k !== 'label');
     for (const k of Object.keys(v)) if (k !== 'base' && !settings.includes(k)) throw new Error(`variant "${name}": unknown setting "${k}"; settings are ${settings.join(', ')}`);
   }

@@ -1,6 +1,6 @@
 // CORE-START — pure domain core: plain data in, plain data out. No DOM, no I/O, no clock.
 // The game's version, semantic versioning. Keep package.json and CHANGELOG.md in step (a test checks).
-const GAME_VERSION='1.4.3';
+const GAME_VERSION='1.5.0';
 // A small Easy galaxy whose home system has a poor and a rich free planet; the tutorial is played in it.
 const TUTORIAL_SEED=164;
 const TYPES=['fighter','colony','scout'];
@@ -14,10 +14,12 @@ const TECH={
 const techCost=l=>40+40*l;
 // Difficulty shapes only the rivals: what they can see, when they strike, what share of their IU they may spend on
 // fighters each turn (so their fleets grow with their empires), and how much they earn.
+// Hard is Normal without fog of war; only Impossible earns more than you, since extra income compounds (see sim/).
 const DIFF={
   easy:{label:'Easy',fog:true,attackTurn:20,shipShare:0.5,income:0.75},
   normal:{label:'Normal',fog:true,attackTurn:10,shipShare:0.5,income:1},
-  hard:{label:'Hard',fog:false,attackTurn:6,shipShare:0.8,income:1.25}
+  hard:{label:'Hard',fog:false,attackTurn:10,shipShare:0.5,income:1},
+  impossible:{label:'Impossible',fog:false,attackTurn:6,shipShare:0.8,income:1.25}
 };
 const diffOf=s=>DIFF[s.difficulty]||DIFF.normal;
 // You are always empire 0. Small galaxies use the first three, medium the first five, large all seven.

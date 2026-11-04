@@ -27,9 +27,9 @@ test('galaxies use the seeds given, or 1000, 1037, 1074 and so on', () => {
 });
 
 test('a variant overrides its base difficulty, and the override changes the games', () => {
-  const rows = small({ 'Hard 125%': { base: 'hard' }, 'Hard 100%': { base: 'hard', income: 1.0 } });
+  const rows = small({ 'Impossible 125%': { base: 'impossible' }, 'Impossible 100%': { base: 'impossible', income: 1.0 } });
   const income = v => rows.filter(r => r.variant === v).reduce((a, r) => a + (r.best_rival_income_30 ?? 0), 0);
-  assert.ok(income('Hard 125%') > income('Hard 100%'));
+  assert.ok(income('Impossible 125%') > income('Impossible 100%'));
 });
 
 test('the real difficulty levels are left as they were', () => {
@@ -39,7 +39,7 @@ test('the real difficulty levels are left as they were', () => {
 });
 
 test('mistakes in a spec are refused with a reason', () => {
-  assert.throws(() => small({ X: { base: 'brutal' } }), /base "brutal"/);
+  assert.throws(() => small({ X: { base: 'brutal' } }), /base "brutal" is unknown; use easy, normal, hard or impossible/);
   assert.throws(() => small({ X: { base: 'hard', incom: 1 } }), /unknown setting "incom"; settings are fog, attackTurn, shipShare, income$/);
   assert.throws(() => small({ X: { base: 'hard', label: 'Mine' } }), /unknown setting "label"/);
   assert.throws(() => small({}), /at least one variant/);

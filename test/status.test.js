@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const g = require('../core.js');
 
 test('empire status counts systems, income and ships for every empire', () => {
-  const s = g.newGame(42, 'hard');
+  const s = g.newGame(42, 'impossible');
   // Give the player a second planet in its home system and one in another system, and an extra fleet.
   const home = s.empires[0].home;
   const [atHome, away] = s.planets.filter(p => p.owner < 0 && p.star !== home);
@@ -20,7 +20,7 @@ test('empire status counts systems, income and ships for every empire', () => {
   assert.equal(me.income, g.incomeOf(s, 0));
   const ships = s.fleets.filter(f => f.owner === 0).flatMap(f => f.ships);
   assert.deepEqual([me.fighter, me.colony, me.scout], ['fighter', 'colony', 'scout'].map(t => ships.filter(x => x.type === t).length));
-  for (const r of rows.slice(1)) assert.equal(r.income, g.incomeOf(s, r.id)); // includes the Hard income bonus
+  for (const r of rows.slice(1)) assert.equal(r.income, g.incomeOf(s, r.id)); // includes the Impossible income bonus
 });
 
 test('a fallen empire is listed with nothing left', () => {
