@@ -98,6 +98,9 @@ summarise(df)
   `unfinished`), `end_turn`, `biggest_rival_fleet`, and at turns 30, 60 and 120 the stand-in's share of
   habitable planets (`share_60`), its income (`income_60`) and the best rival's (`best_rival_income_60`).
   These are empty once the game has ended or the stand-in has fallen.
+- `galaxies` is the number of runs per variant: each run plays one galaxy to the end. The same call always
+  gives the same results, because games are seeded; to reduce noise, use more galaxies (four times as many
+  halves the standard error), or try other `seeds` to check a result holds on different galaxies.
 - Other arguments: `seeds=[...]` to choose galaxies (default 1000, 1037, 1074, ...), `victory='dominance'`,
   and `repo='path/to/four-x-web'` if Python is running somewhere else.
 - `summarise(df)` counts wins, losses and unfinished games per variant with the win rate and its standard

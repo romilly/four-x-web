@@ -43,7 +43,9 @@ def _run_variant(repo, name, settings, size, galaxies, turns, seeds, victory):
 
 
 def run_balance(variants, size='small', galaxies=24, turns=200, seeds=None, victory='total', repo=None):
-    """Play `galaxies` galaxies under each variant; one row per game.
+    """Play `galaxies` games (one galaxy each) under each variant; one row per game.
+
+    galaxies  runs per variant: more runs, smaller standard error (four times as many halves it)
 
     variants  {name: {'base': 'hard', 'income': 1.0, ...}}, in the order you want them reported
     size      'small', 'medium' or 'large'
