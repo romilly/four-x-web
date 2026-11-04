@@ -8,6 +8,11 @@ and at the foot of the orders panel) and is recorded in every saved game.
 The save-file format has its own number (`version` in a save); it changes only when the shape of a saved
 game changes.
 
+## 1.5.1 (2026-11-04)
+
+- Visits to the game page are now counted with GoatCounter, which uses no cookies and stores no personal data.
+  The About tab says so. Your games are still saved only in your browser.
+
 ## 1.5.0 (2026-11-04)
 
 - A new difficulty, **Impossible**, has the old Hard settings: rivals see the whole map, may attack from turn 6,

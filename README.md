@@ -16,6 +16,9 @@ this repository; it loads three.js and js-yaml from CDNs, so it needs a connecti
 - Touch: drag to pan, pinch to zoom, drag with two fingers to rotate.
 - Mouse: drag to pan, scroll to zoom, right-drag or Shift-drag to rotate.
 
+Visits to the game page are counted by [GoatCounter](https://www.goatcounter.com/), which uses no cookies;
+the dashboard is at https://romilly.goatcounter.com. The tests block outside requests, so they are never counted.
+
 ## New games
 
 Under **?** → Game, choose a galaxy size and a victory condition, then tap a difficulty to start.
