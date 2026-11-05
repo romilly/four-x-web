@@ -1,6 +1,6 @@
 // CORE-START — pure domain core: plain data in, plain data out. No DOM, no I/O, no clock.
 // The game's version, semantic versioning. Keep package.json and CHANGELOG.md in step (a test checks).
-const GAME_VERSION='1.5.1';
+const GAME_VERSION='1.6.0';
 // A small Easy galaxy whose home system has a poor and a rich free planet; the tutorial is played in it.
 const TUTORIAL_SEED=164;
 const TYPES=['fighter','colony','scout'];
@@ -81,12 +81,31 @@ function hops(adj,from){
   for(let k=0;k<q.length;k++){const u=q[k];for(const v of adj[u])if(d[v]===Infinity){d[v]=d[u]+1;q.push(v);}}
   return d;
 }
-function route(adj,from,to){
+// The stars after `from` on a shortest route to `to`. Among equally short routes it takes the one through the fewest
+// stars in `avoid` (the destination does not count); ties go to the route found first, as breadth-first search would.
+function route(adj,from,to,avoid=null){
   if(from===to)return[];
-  const prev=adj.map(()=>-1);prev[from]=from;const q=[from];
-  for(let k=0;k<q.length;k++){const u=q[k];if(u===to)break;for(const v of adj[u])if(prev[v]<0){prev[v]=u;q.push(v);}}
+  const d=adj.map(()=>Infinity),cost=adj.map(()=>Infinity),prev=adj.map(()=>-1);
+  d[from]=0;cost[from]=0;prev[from]=from;const q=[from];
+  for(let k=0;k<q.length;k++){
+    const u=q[k];if(d[u]>=d[to])break;
+    for(const v of adj[u]){
+      if(d[v]<d[u]+1)continue;
+      if(d[v]===Infinity){d[v]=d[u]+1;q.push(v);}
+      const c=cost[u]+(avoid&&v!==to&&avoid.has(v)?1:0);
+      if(c<cost[v]){cost[v]=c;prev[v]=u;}
+    }
+  }
   if(prev[to]<0)return null;
   const p=[];for(let v=to;v!==from;v=prev[v])p.push(v);return p.reverse();
+}
+// Stars that empire e, looking at `view` (its own fogged view, or the whole state), knows to be hostile:
+// another empire's fighters are there, or another empire holds a planet there.
+function hostileStars(view,e){
+  const h=new Set();
+  for(const f of view.fleets)if(f.owner!==e&&has(f,'fighter'))h.add(f.at);
+  for(const p of view.planets)if(p.owner>=0&&p.owner!==e)h.add(p.star);
+  return h;
 }
 // A fleet moves at the pace of its slowest ship; scouts are faster only when travelling alone.
 const fleetSpeed=(s,f)=>1+s.empires[f.owner].tech.drives+(f.ships.every(x=>x.type==='scout')?1:0);
@@ -290,12 +309,25 @@ function resolveTurn(state,ordersBy,rng){
   const say=(msg,kind,star)=>ev.push(star==null?{msg,kind}:{msg,kind,star});
   // 1. Orders, empire by empire
   for(const e of Object.keys(ordersBy).map(Number).sort((a,b)=>a-b))applyOrders(s,e,ordersBy[e]||[],say,true);
-  // 2. Fleets jump along lanes
+  // 2. Fleets jump along lanes, each by the shortest route its owner knows to be safest. A fleet passing a star where
+  // another empire's fighters are parked (not themselves moving) is stopped there, to fight; it carries on next turn.
+  const hostile={},guards=s.stars.map(()=>new Set());
+  for(const emp of s.empires)if(emp.alive)hostile[emp.id]=hostileStars(emp.id===0?fogView(s,0):sightOf(s,emp.id),emp.id);
+  for(const f of s.fleets)if(f.dest==null&&has(f,'fighter'))guards[f.at].add(f.owner);
   for(const f of s.fleets){
     if(f.dest==null)continue;
-    const p=route(adj,f.at,f.dest);
+    const p=route(adj,f.at,f.dest,hostile[f.owner]);
     if(!p||!p.length){f.dest=null;continue;}
-    f.at=p[Math.min(fleetSpeed(s,f),p.length)-1];
+    const n=Math.min(fleetSpeed(s,f),p.length);
+    for(let i=0;i<n;i++){
+      f.at=p[i];
+      const by=[...guards[f.at]].filter(o=>o!==f.owner);
+      if(i<n-1&&by.length){
+        if(f.owner===0)say(`Fleet ${f.id} was intercepted at ${s.stars[f.at].name} by ${by.map(o=>s.empires[o].name).join(' and ')} fighters.`,'battle',f.at);
+        else if(by.includes(0))say(`Your fighters at ${s.stars[f.at].name} stopped a ${s.empires[f.owner].name} fleet passing through.`,'battle',f.at);
+        break;
+      }
+    }
     if(f.at===f.dest)f.dest=null;
   }
   const seeNow=vision(s,0);
@@ -531,6 +563,6 @@ function checkSave(g,orders){
   return null;
 }
 // CORE-END
-if(typeof module!=='undefined')module.exports={GAME_VERSION,TUTORIAL_SEED,TYPES,COST,SHIP,TECH,techCost,DIFF,diffOf,EMP,SIZES,sizeOf,VICTORY,habitableCount,dominanceOf,STAR_KINDS,PLANET_TYPES,SYSTEMS,makeRng,adjOf,hops,route,
+if(typeof module!=='undefined')module.exports={GAME_VERSION,TUTORIAL_SEED,TYPES,COST,SHIP,TECH,techCost,DIFF,diffOf,EMP,SIZES,sizeOf,VICTORY,habitableCount,dominanceOf,STAR_KINDS,PLANET_TYPES,SYSTEMS,makeRng,adjOf,hops,route,hostileStars,
   fleetSpeed,countTypes,has,planetsAt,capOf,shipyardCapacity,incomeOf,empireStatus,vision,updateIntel,fogView,sightOf,newGame,applyOrders,previewOrders,settleChoice,colonyOrder,resolveTurn,aiOrders,
   SAVE_FORMAT,SAVE_VERSION,SAVE_YAML,toSave,fromSave,checkSave};

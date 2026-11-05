@@ -8,6 +8,18 @@ and at the foot of the orders panel) and is recorded in every saved game.
 The save-file format has its own number (`version` in a save); it changes only when the shape of a saved
 game changes.
 
+## 1.6.0 (unreleased, on the `interception` branch)
+
+- **Interception:** a fleet passing through a star where another empire's fighters are parked is stopped there and
+  must fight; if it survives it carries on next turn. Fighters that are themselves moving don't stop anyone. This
+  matters for fleets with Hyperdrives, which used to skip the stars between their stops. The turn report says when
+  your fleet is intercepted, or when your fighters stop someone else's.
+- **Safer routes:** fleets still take a shortest route, but when several are equally short they take the one
+  through the fewest stars their owner knows to be hostile (enemy fighters or enemy planets). The route line and
+  arrival estimate follow the same choice. Rivals route and are intercepted the same way.
+- Balance simulations (192 small galaxies per level) show little change in the scripted stand-in's win rate:
+  Easy 85% to 86%, Normal 31% to 34%, Hard 15% to 19%, Impossible 8% to 9%, each within about one standard error.
+
 ## 1.5.1 (2026-11-04)
 
 - Visits to the game page are now counted with GoatCounter, which uses no cookies and stores no personal data.

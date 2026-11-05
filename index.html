@@ -330,6 +330,8 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
       </tbody></table>
       <ul>
         <li>Ships travel in <b>fleets</b> along the hyperlanes, one jump a turn, or two for a fleet of only scouts. Each Hyperdrives level adds one. A fleet moves at the pace of its slowest ship.</li>
+        <li><b>Routes:</b> a fleet always takes a shortest route. When several are equally short, it takes the one through the fewest stars you know to be hostile: enemy fighters or enemy planets.</li>
+        <li><b>Interception:</b> a fleet passing through a star where another empire's fighters are parked is stopped there and must fight. If it survives it carries on next turn. Fighters on the move don't stop anyone, so park fighters at a chokepoint to guard it. Rivals are stopped the same way.</li>
         <li><b>Send…</b> on a fleet: choose how many of each ship, press <b>Choose destination</b>, tap a star. The ships you chose split off as a new fleet; the rest stay.</li>
         <li><b>Merge</b> joins fleets parked at the same star. <b>Hold</b> cancels a move. <b>Undo</b> removes your last order.</li>
         <li>Build ships in the <b>Shipyard</b> of any star where you hold a planet. New ships join a parked fleet there at the end of the turn and can move the turn after.</li>
@@ -602,11 +604,11 @@ function refreshGalaxy(){
     });
   }
   oct.dispose();
-  const adj=adjOf(view),seen=new Set();
+  const adj=adjOf(view),seen=new Set(),danger=hostileStars(pv,0);
   for(const f of view.fleets){
     if(f.owner!==0||f.dest==null)continue;
     const key=f.at+'>'+f.dest;if(seen.has(key))continue;seen.add(key);
-    const p=route(adj,f.at,f.dest);if(!p)continue;
+    const p=route(adj,f.at,f.dest,danger);if(!p)continue;
     const pts=[f.at,...p].map(i=>new THREE.Vector3(view.stars[i].x,H(view.stars[i])+0.3,view.stars[i].y));
     const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
       new THREE.LineDashedMaterial({color:0xf2b544,dashSize:1.1,gapSize:0.8,transparent:true,opacity:.95,depthWrite:false}));
@@ -790,7 +792,7 @@ function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','
 
 function fleetCard(f,adj){
   let note='Parked';
-  if(f.dest!=null){const p=route(adj,f.at,f.dest),turns=Math.ceil(p.length/fleetSpeed(view,f));
+  if(f.dest!=null){const p=route(adj,f.at,f.dest,hostileStars(pv,0)),turns=Math.ceil(p.length/fleetSpeed(view,f));
     note=`Bound for ${esc(view.stars[f.dest].name)} · ${turns} ${turns===1?'turn':'turns'}`;}
   const tp=f.target!=null?view.planets[f.target]:null,sp=settleChoice(view,f);
   if(sp)note=`Settles ${esc(sp.name)} at end of turn`;
