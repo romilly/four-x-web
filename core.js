@@ -1,6 +1,6 @@
 // CORE-START — pure domain core: plain data in, plain data out. No DOM, no I/O, no clock.
 // The game's version, semantic versioning. Keep package.json and CHANGELOG.md in step (a test checks).
-const GAME_VERSION='1.6.0';
+const GAME_VERSION='1.7.0';
 // A small Easy galaxy whose home system has a poor and a rich free planet; the tutorial is played in it.
 const TUTORIAL_SEED=164;
 const TYPES=['fighter','colony','scout'];
@@ -495,6 +495,18 @@ function aiOrders(s,e,rng){
   }
   return out;
 }
+// ---------- replaying a galaxy ----------
+// A galaxy is fixed by its seed, size, victory condition and difficulty, so it can be restarted at turn 1, or shared
+// as a link that opens it: ?galaxy=SEED&size=small&victory=total&difficulty=normal (all but galaxy optional).
+const restartGame=g=>newGame(g.seed,g.difficulty,g.size,g.victory);
+const galaxyLink=(g,base)=>`${base}?galaxy=${g.seed}&size=${g.size}&victory=${g.victory}&difficulty=${g.difficulty}`;
+function galaxyFromLink(search){
+  const q=new URLSearchParams(search),seed=q.get('galaxy');
+  if(seed==null||!/^[0-9]+$/.test(seed))return null;
+  const size=q.get('size')??'small',victory=q.get('victory')??'total',difficulty=q.get('difficulty')??'normal';
+  if(!SIZES[size]||!VICTORY[victory]||!DIFF[difficulty])return null;
+  return {seed:Number(seed),size,victory,difficulty};
+}
 // ---------- saved games ----------
 // A save is plain data: a format name, a version and the whole game state, plus any orders queued but not yet run.
 // Bump SAVE_VERSION whenever the shape of the state changes, and add a migration from the old version if one is possible.
@@ -563,6 +575,6 @@ function checkSave(g,orders){
   return null;
 }
 // CORE-END
-if(typeof module!=='undefined')module.exports={GAME_VERSION,TUTORIAL_SEED,TYPES,COST,SHIP,TECH,techCost,DIFF,diffOf,EMP,SIZES,sizeOf,VICTORY,habitableCount,dominanceOf,STAR_KINDS,PLANET_TYPES,SYSTEMS,makeRng,adjOf,hops,route,hostileStars,
+if(typeof module!=='undefined')module.exports={GAME_VERSION,TUTORIAL_SEED,TYPES,COST,SHIP,TECH,techCost,DIFF,diffOf,EMP,SIZES,sizeOf,VICTORY,habitableCount,dominanceOf,STAR_KINDS,PLANET_TYPES,SYSTEMS,makeRng,adjOf,hops,route,hostileStars,restartGame,galaxyLink,galaxyFromLink,
   fleetSpeed,countTypes,has,planetsAt,capOf,shipyardCapacity,incomeOf,empireStatus,vision,updateIntel,fogView,sightOf,newGame,applyOrders,previewOrders,settleChoice,colonyOrder,resolveTurn,aiOrders,
   SAVE_FORMAT,SAVE_VERSION,SAVE_YAML,toSave,fromSave,checkSave};

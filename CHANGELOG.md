@@ -8,6 +8,17 @@ and at the foot of the orders panel) and is recorded in every saved game.
 The save-file format has its own number (`version` in a save); it changes only when the shape of a saved
 game changes.
 
+## 1.7.0 (2026-11-05)
+
+- **Restart this galaxy** (under ? → Game) plays the current galaxy again from turn 1, with the same size, victory
+  condition and difficulty. It asks for a second tap first, unless the game is over or still on turn 1.
+- **Galaxy links:** Copy link gives a link that opens this galaxy at turn 1, to bookmark or share, e.g.
+  `?galaxy=525128&size=small&victory=total&difficulty=hard`. Opening a link asks before replacing a game in
+  progress; damaged links are ignored.
+- When a game ends, **Play this galaxy again** restarts it straight away.
+- Restarting rebuilds the galaxy from its seed with today's generator, so a game begun several versions ago (before
+  galaxies were 3D, say) comes back as today's version of that galaxy.
+
 ## 1.6.0 (2026-11-05)
 
 - **Interception:** a fleet passing through a star where another empire's fighters are parked is stopped there and

@@ -162,6 +162,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .diffs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .diffs .btn.armed{background:var(--alarm);border-color:var(--alarm);color:var(--gold-ink)}
 #diffNote,#saveNote,#loadSummary{margin-top:8px;font-size:12.5px}
+.linkbox{width:100%;margin-top:8px;padding:7px 9px;border:1px solid var(--rule);border-radius:6px;background:rgba(6,9,19,.5);color:var(--ink);font:500 12px var(--f-data)}
 .diffs.two,.diffs.levels{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media (min-width:760px){.diffs.levels{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .confirm{margin-top:8px;padding:10px;border:1px solid var(--gold);border-radius:8px}
@@ -312,7 +313,7 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
         <li><b>The galaxy is three-dimensional.</b> Stars sit above and below the galactic plane; the faint line under each star shows its height. Rotate the map to see the shape (Controls tab).</li>
         <li><b>Fog of war:</b> you see one jump around your planets and fleets. Elsewhere the map shows what you last saw, which may be out of date.</li>
         <li><b>The turn report</b> in the orders panel lists what happened last turn: battles, captures, new colonies, ships built. Tap a line to jump to that star.</li>
-        <li><b>New game:</b> the Game tab chooses galaxy size (3, 5 or 7 empires), victory (total or dominance) and difficulty. It also saves and loads games as files; your game also saves itself in this browser after every move.</li>
+        <li><b>New game:</b> the Game tab chooses galaxy size (3, 5 or 7 empires), victory (total or dominance) and difficulty. It also saves and loads games as files; your game also saves itself in this browser after every move. <b>Restart this galaxy</b> plays the same galaxy again from turn 1, and <b>Copy link</b> gives you a link to it, to bookmark or to challenge a friend.</li>
       </ul>
     </div>
     <div class="tabp" data-panel="status" hidden>
@@ -403,6 +404,12 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
       </div>
       <p class="note" id="saveNote" role="status">Your game also saves itself in this browser after every move.</p>
     </div>
+      <div class="newg" id="thisGalaxy">
+        <h3>This galaxy</h3>
+        <div class="diffs two"><button class="btn" id="restartBtn">Restart this galaxy</button><button class="btn" id="copyLink">Copy link</button></div>
+        <input class="linkbox" id="galaxyLink" readonly aria-label="Link to this galaxy">
+        <p class="note" id="restartNote" role="status"></p>
+      </div>
       <div class="newg">
       <h3>Start a new galaxy</h3>
       <div class="pickrow"><span class="pl">Size</span><div class="seg" role="radiogroup" aria-label="Galaxy size" data-pick="size">
@@ -447,7 +454,19 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
     <p class="note" id="overText" style="margin-top:10px"></p>
     <div class="acts">
       <button class="btn" data-close="overModal">View the map</button>
+      <button class="btn" id="overAgain">Play this galaxy again</button>
       <button class="btn primary" id="overNew">New game…</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="linkModal" hidden>
+  <div class="card" role="dialog" aria-labelledby="linkH">
+    <h2 id="linkH">Play this galaxy?</h2>
+    <p class="note" id="linkText" style="margin-top:10px"></p>
+    <div class="acts">
+      <button class="btn" id="linkKeep">Keep my game</button>
+      <button class="btn primary" id="linkPlay">Play this galaxy</button>
     </div>
   </div>
 </div>
@@ -1009,7 +1028,7 @@ function openHelp(tab='basics'){
   $('tutCall').hidden=!!tut;
   $('tutRestart').textContent=tut?'Restart the tutorial':'Start the tutorial';
   $('tutNote').textContent='Starts a new, gentle galaxy and guides you through the first turns.';
-  newArmed=null;
+  newArmed=null;showThisGalaxy();
   document.querySelectorAll('#helpModal [data-diff]').forEach(b=>b.classList.remove('armed'));
   $('diffNote').textContent=DIFF_NOTE;
   $('loadConfirm').hidden=true;toLoad=null;
@@ -1089,12 +1108,46 @@ document.querySelectorAll('[data-pick] [data-val]').forEach(b=>b.onclick=()=>{
   try{localStorage.setItem('gr-next-1',JSON.stringify(nextSet));}catch(e){}
   renderPicks();
 });
-function startNew(d){
+function begin(g){
   tut=null;
   if(mode==='system')exitSystem();
-  game=newGame(Math.floor(Math.random()*900000)+100000,d,nextSet.size,nextSet.victory);pending=[];sel=null;targeting=null;picking=null;
+  game=g;pending=[];sel=null;targeting=null;picking=null;
   buildStars();centerOn(game.stars[game.empires[0].home],true);refresh();
 }
+const startNew=d=>begin(newGame(Math.floor(Math.random()*900000)+100000,d,nextSet.size,nextSet.victory));
+// ---------- replaying a galaxy: restart it, or share it as a link ----------
+const SITE_URL='https://romilly.github.io/four-x-web/';
+const RESTART_NOTE='Restart plays this galaxy again from turn 1, with the same size, victory and difficulty. Bookmark or share the link to play it again later.';
+let restartArmed=false;
+function showThisGalaxy(){
+  restartArmed=false;$('restartBtn').classList.remove('armed');
+  $('thisGalaxy').hidden=!!tut;
+  $('galaxyLink').value=galaxyLink(game,SITE_URL);
+  $('restartNote').textContent=RESTART_NOTE;
+}
+$('restartBtn').onclick=()=>{
+  if(!game.over&&game.turn>1&&!restartArmed){
+    restartArmed=true;$('restartBtn').classList.add('armed');
+    $('restartNote').textContent=`Tap again to abandon this game and play galaxy ${game.seed} from turn 1.`;return;
+  }
+  begin(restartGame(game));$('helpModal').hidden=true;
+};
+$('copyLink').onclick=async()=>{
+  const link=$('galaxyLink').value;
+  try{await navigator.clipboard.writeText(link);$('restartNote').textContent='Link copied. Paste it anywhere to share or keep this galaxy.';}
+  catch(e){$('galaxyLink').select();$('restartNote').textContent='Select the link above and copy it.';}
+};
+$('overAgain').onclick=()=>{$('overModal').hidden=true;begin(restartGame(game));};
+// A link that names a galaxy starts it, asking first if it would replace a game in progress.
+let linked=null;
+function offerLinked(spec,current){
+  linked=spec;
+  $('linkText').textContent=`This link opens galaxy ${spec.seed} (${SIZES[spec.size].label}, ${VICTORY[spec.victory].label}, ${DIFF[spec.difficulty].label}) at turn 1. `+
+    `Playing it replaces your game in progress (galaxy ${current.seed}, turn ${current.turn}), unless you have saved that as a file.`;
+  $('linkModal').hidden=false;
+}
+$('linkKeep').onclick=()=>{$('linkModal').hidden=true;linked=null;};
+$('linkPlay').onclick=()=>{$('linkModal').hidden=true;const s=linked;linked=null;begin(newGame(s.seed,s.difficulty,s.size,s.victory));};
 function showOver(){
   const o=game.over;
   const left=game.empires.filter(e=>e.alive&&e.id!==0).map(e=>e.name);
@@ -1192,10 +1245,21 @@ function start(data){
   const saved=valid(data)?data:load();
   if(saved){game=saved.game;pending=saved.pending||[];game.size??='small';game.victory??='total';for(const st of game.stars)st.z??=0;}else game=newGame(Math.floor(Math.random()*900000)+100000);
   tut=valid(data)?data.tut||null:loadTut();
+  // ?galaxy=... : play that galaxy, straight away if nothing is in progress; then tidy the address so a reload doesn't repeat it.
+  let ask=null;
+  if(!valid(data)&&new URLSearchParams(location.search).has('galaxy')){
+    const spec=galaxyFromLink(location.search);
+    try{history.replaceState(null,'',location.pathname+location.hash);}catch(e){}
+    if(spec){
+      if(saved&&!game.over&&game.turn>1)ask=spec;
+      else{game=newGame(spec.seed,spec.difficulty,spec.size,spec.victory);pending=[];tut=null;}
+    }
+  }
   view=previewOrders(game,0,pending);pv=fogView(view,0);
   try{initScene();}catch(err){document.body.insertAdjacentHTML('beforeend','<div class="fail"><p>This device could not start WebGL, which the star chart needs.</p></div>');return;}
   refresh();
-  if(!seenHelp())openHelp();
+  if(ask)offerLinked(ask,game);
+  else if(!seenHelp())openHelp();
   window.claude?.hot?.snapshot?.(()=>({game,pending,tut}));
 }
 if(typeof THREE==='undefined'||!THREE.OrbitControls){

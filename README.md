@@ -39,6 +39,14 @@ Under **?** → Game, choose a galaxy size and a victory condition, then tap a d
 - **Total victory:** be the last empire standing.
 - **Dominance:** hold 60% of all habitable planets, or be the last standing. A rival that reaches 60% first wins.
 
+## Replaying a galaxy
+
+Every galaxy is fixed by its number (seed), size, victory condition and difficulty. Under **?** → Game,
+**Restart this galaxy** plays the current galaxy again from turn 1, and **Copy link** gives a link that opens it,
+for example `https://romilly.github.io/four-x-web/?galaxy=525128&size=small&victory=total&difficulty=hard`.
+Only `galaxy` is needed; the others default to small, total victory and Normal. Opening a link asks before
+replacing a game in progress. When a game ends, **Play this galaxy again** restarts it.
+
 ## Saved games
 
 Open the **?** panel and choose **Save as YAML** or **Load a save**. A save is a readable YAML file
