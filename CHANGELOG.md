@@ -8,7 +8,7 @@ and at the foot of the orders panel) and is recorded in every saved game.
 The save-file format has its own number (`version` in a save); it changes only when the shape of a saved
 game changes.
 
-## 1.6.0 (unreleased, on the `interception` branch)
+## 1.6.0 (2026-11-05)
 
 - **Interception:** a fleet passing through a star where another empire's fighters are parked is stopped there and
   must fight; if it survives it carries on next turn. Fighters that are themselves moving don't stop anyone. This
