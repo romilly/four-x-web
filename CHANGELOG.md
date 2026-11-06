@@ -8,6 +8,16 @@ and at the foot of the orders panel) and is recorded in every saved game.
 The save-file format has its own number (`version` in a save); it changes only when the shape of a saved
 game changes.
 
+## 1.7.1 (unreleased, on the `fair-growth` branch)
+
+- **Fix:** population growth no longer depends on how the game happens to number planets. Planets used to grow on
+  alternate turns by their number, so odd-numbered planets always grew first and reached each population a turn
+  earlier: a small, lasting edge in income for some empires. Now every planet grows every other turn counted from
+  when it was settled or captured, so every homeworld grows on the same turns, a new colony first grows the turn
+  after it is settled, and equal empires have equal incomes on every turn. Games in progress switch over at once.
+- In simulations (384 small galaxies per level) the stand-in's win rates are unchanged within the noise: Easy 82%
+  to 79%, Normal 31% to 31%, Hard 17% to 16%, Impossible 10% to 11%.
+
 ## 1.7.0 (2026-11-05)
 
 - **Restart this galaxy** (under ? → Game) plays the current galaxy again from turn 1, with the same size, victory

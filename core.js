@@ -1,6 +1,6 @@
 // CORE-START — pure domain core: plain data in, plain data out. No DOM, no I/O, no clock.
 // The game's version, semantic versioning. Keep package.json and CHANGELOG.md in step (a test checks).
-const GAME_VERSION='1.7.0';
+const GAME_VERSION='1.7.1';
 // A small Easy galaxy whose home system has a poor and a rich free planet; the tutorial is played in it.
 const TUTORIAL_SEED=164;
 const TYPES=['fighter','colony','scout'];
@@ -218,7 +218,7 @@ function newGame(seed,difficulty='normal',size='small',victory='total'){
     s.fleets.push({id:s.nextFleet++,owner:i,at:h,dest:null,target:null,
       ships:['fighter','fighter','colony','scout'].map(type=>({id:s.nextShip++,type}))});
   });
-  for(const sys of bySystem)sys.forEach((p,k)=>s.planets.push({id:s.planets.length,star:p.star,name:`${stars[p.star].name} ${ROMAN[k]}`,type:p.type,cap:p.cap,owner:p.owner,pop:p.pop}));
+  for(const sys of bySystem)sys.forEach((p,k)=>s.planets.push({id:s.planets.length,star:p.star,name:`${stars[p.star].name} ${ROMAN[k]}`,type:p.type,cap:p.cap,owner:p.owner,pop:p.pop,...(p.owner>=0?{settled:0}:{})}));
   s.rngState=rng.state;
   s.intel=s.empires.map(()=>({stars:stars.map(()=>false),planets:s.planets.map(()=>null)}));
   updateIntel(s);
@@ -372,7 +372,7 @@ function resolveTurn(state,ordersBy,rng){
       const prev=p.owner,tell=a===0||prev===0||seeNow[st.id];
       p.pop-=Math.ceil(fighters[a]/2);
       if(p.pop<=0){
-        p.owner=a;p.pop=1;
+        p.owner=a;p.pop=1;p.settled=s.turn;
         if(tell)say(a===0?`You captured ${p.name} from ${s.empires[prev].name}.`:`${s.empires[a].name} captured ${p.name}${prev===0?' from you':''}.`,'capture',st.id);
       }else if(tell)say(`${p.name} is under siege by ${nm(a)}. Population ${p.pop}.`,'siege',st.id);
     }
@@ -382,16 +382,18 @@ function resolveTurn(state,ordersBy,rng){
   for(const f of s.fleets.slice()){
     const p=settleChoice(s,f);if(!p)continue;
     f.ships.splice(f.ships.findIndex(x=>x.type==='colony'),1);
-    p.owner=f.owner;p.pop=1;if(f.target===p.id)f.target=null;
+    p.owner=f.owner;p.pop=1;p.settled=s.turn;if(f.target===p.id)f.target=null;
     if(f.owner===0)say(`New colony founded on ${p.name}.`,'colony',p.star);
     else if(seeNow[p.star])say(`${s.empires[f.owner].name} settled ${p.name}.`,'colony',p.star);
   }
   s.fleets=s.fleets.filter(f=>f.ships.length);
-  // 5. Growth and income
+  // 5. Growth and income. A planet gains one person every other turn, counted from the turn it was settled or
+  // captured (homeworlds count from 0), so every homeworld grows on the same turns and a new colony first grows the
+  // turn after it is settled. Saves from before 1.7.1 have no settling turns; their planets count from 0.
   for(const p of s.planets){
     if(p.owner<0)continue;
     const cap=capOf(s,p);
-    if(p.pop<cap&&(s.turn+p.id)%2===0)p.pop++;
+    if(p.pop<cap&&(s.turn-(p.settled??0))%2===1)p.pop++;
     if(p.pop>cap)p.pop=cap;
   }
   for(const emp of s.empires)if(emp.alive)emp.credits+=incomeOf(s,emp.id);
@@ -558,7 +560,7 @@ function checkSave(g,orders){
     for(const k of Object.keys(TECH))if(!int(e.tech[k])||e.tech[k]<0||e.tech[k]>TECH[k].max)return `empire ${i} has an impossible ${TECH[k].name} level`;
   }
   const owner=o=>int(o)&&o>=-1&&o<E;
-  if(!arr(g.planets)||!g.planets.every((p,i)=>obj(p)&&p.id===i&&star(p.star)&&PLANET_TYPES[p.type]&&typeof p.name==='string'&&int(p.cap)&&p.cap>=0&&owner(p.owner)&&int(p.pop)&&p.pop>=0))return 'a planet entry is invalid';
+  if(!arr(g.planets)||!g.planets.every((p,i)=>obj(p)&&p.id===i&&star(p.star)&&PLANET_TYPES[p.type]&&typeof p.name==='string'&&int(p.cap)&&p.cap>=0&&owner(p.owner)&&int(p.pop)&&p.pop>=0&&(p.settled==null||(int(p.settled)&&p.settled>=0))))return 'a planet entry is invalid';
   const P=g.planets.length;
   let maxF=0,maxS=0;
   if(!arr(g.fleets))return 'the fleet list is missing';

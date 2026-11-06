@@ -169,8 +169,8 @@ test('self-play runs to completion and empires spread over many planets', () => 
 
 test('difficulty levels rank in order for a scripted stand-in', () => {
   // Planet games rarely finish inside 120 turns, so compare how much of the galaxy the stand-in holds.
-  // 24 galaxies: with fewer, neighbouring levels can tie by chance.
-  const many = Array.from({ length: 24 }, (_, i) => 1000 + i * 37);
+  // 48 galaxies: with 24, Normal and Hard swapped places by chance once growth became fair (1.7.1).
+  const many = Array.from({ length: 48 }, (_, i) => 1000 + i * 37);
   const held = d => many.reduce((n, seed) => n + selfPlay(seed, d, 120).planets.filter(p => p.owner === 0).length, 0);
   const easy = held('easy'), normal = held('normal'), hard = held('hard'), impossible = held('impossible');
   assert.ok(easy > normal && normal > hard && hard > impossible, `easy ${easy}, normal ${normal}, hard ${hard}, impossible ${impossible}`);
