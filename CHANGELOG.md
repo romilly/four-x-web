@@ -8,7 +8,7 @@ and at the foot of the orders panel) and is recorded in every saved game.
 The save-file format has its own number (`version` in a save); it changes only when the shape of a saved
 game changes.
 
-## 1.7.1 (unreleased, on the `fair-growth` branch)
+## 1.7.1 (2026-11-06)
 
 - **Fix:** population growth no longer depends on how the game happens to number planets. Planets used to grow on
   alternate turns by their number, so odd-numbered planets always grew first and reached each population a turn
