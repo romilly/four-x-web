@@ -70,3 +70,18 @@ test('the Scores tab shows the tally, and Reset clears it after a second tap', a
   await expect(cell(page, 'all', 'all')).toHaveText('0–0–0');
   expect((await scores(page)).easy.small).toEqual({ win: 0, loss: 0, abandoned: 0 });
 });
+
+test('wins are green, losses red and abandoned games yellow', async ({ page }) => {
+  await openGame(page);
+  await page.evaluate(() => localStorage.setItem('gr-scores-1', JSON.stringify({ normal: { small: { win: 3, loss: 1, abandoned: 2 } } })));
+  await page.reload();
+  await page.waitForFunction(() => document.querySelectorAll('.lbl').length > 0);
+  await scoresTab(page);
+  const c = cell(page, 'normal', 'small');
+  await expect(c).toHaveText('3–1–2');
+  const colour = k => c.locator(`.${k}`).evaluate(e => getComputedStyle(e).color);
+  expect(await colour('w')).toBe('rgb(95, 211, 122)');
+  expect(await colour('l')).toBe('rgb(240, 90, 90)');
+  expect(await colour('a')).toBe('rgb(245, 213, 71)');
+  await expect(cell(page, 'all', 'all').locator('.w')).toHaveText('3');
+});

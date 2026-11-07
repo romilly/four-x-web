@@ -37,6 +37,7 @@
   --gold:#f2b544;
   --teal:#4fd1c5;
   --rose:#ef6f8a;
+  --win:#5fd37a;--loss:#f05a5a;--quit:#f5d547;
   --alarm:#ff8a5c;
   --gold-ink:#1a1204;
   --f-display:"Michroma","Eurostile","Trebuchet MS",sans-serif;
@@ -167,7 +168,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 #scoreTable th:first-child,#scoreTable td:first-child{text-align:left}
 #scoreTable td{text-align:right;padding:6px 4px;border-bottom:1px solid rgba(38,48,77,.6);white-space:nowrap}
 #scoreTable td.zero{color:var(--dim);opacity:.6}
-#scoreTable tr.total td{border-bottom:0;color:var(--gold)}
+#scoreTable tr.total td{border-bottom:0;font-weight:700}
+#scoreTable .w{color:var(--win)}#scoreTable .l{color:var(--loss)}#scoreTable .a{color:var(--quit)}#scoreTable .sep{color:var(--dim)}
 #scoreTable td:first-child{font:600 12.5px var(--f-body)}
 .linkbox{width:100%;margin-top:8px;padding:7px 9px;border:1px solid var(--rule);border-radius:6px;background:rgba(6,9,19,.5);color:var(--ink);font:500 12px var(--f-data)}
 .diffs.two,.diffs.levels{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -441,7 +443,7 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
       <div class="newg">
         <h3>Your record in this browser</h3>
         <table id="scoreTable"></table>
-        <p class="note">Each entry is wins – losses – abandoned. A game counts once: when it ends, or as abandoned if you leave it unfinished after turn 1. The tutorial isn't counted.</p>
+        <p class="note">Each entry is <span style="color:var(--win)">wins</span> – <span style="color:var(--loss)">losses</span> – <span style="color:var(--quit)">abandoned</span>. A game counts once: when it ends, or as abandoned if you leave it unfinished after turn 1. The tutorial isn't counted.</p>
         <div class="acts"><button class="btn" id="resetScores">Reset scores</button></div>
         <p class="note" id="scoreNote" role="status">Scores are kept only in this browser.</p>
       </div>
@@ -1145,7 +1147,8 @@ function settle(){
 let resetArmed=false;
 function renderScores(){
   const sizes=Object.keys(SIZES),levels=Object.keys(DIFF),sum=cells=>RESULTS.map(r=>cells.reduce((n,c)=>n+c[r],0));
-  const td=(d,z,[w,l,a])=>`<td data-d="${d}" data-z="${z}"${w+l+a?'':' class="zero"'}>${w}–${l}–${a}</td>`;
+  const sep='<span class="sep">–</span>';
+  const td=(d,z,[w,l,a])=>`<td data-d="${d}" data-z="${z}"${w+l+a?'':' class="zero"'}><span class="w">${w}</span>${sep}<span class="l">${l}</span>${sep}<span class="a">${a}</span></td>`;
   const row=(label,d,cells)=>`<tr${d==='all'?' class="total"':''}><td>${label}</td>${cells.map((c,i)=>td(d,sizes[i],c)).join('')}${td(d,'all',sum(cells.map(([win,loss,abandoned])=>({win,loss,abandoned}))))}</tr>`;
   const rows=levels.map(d=>row(DIFF[d].label,d,sizes.map(z=>sum([scores[d][z]]))));
   rows.push(row('All','all',sizes.map(z=>sum(levels.map(d=>scores[d][z])))));

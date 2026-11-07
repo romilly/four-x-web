@@ -1,6 +1,6 @@
 {
   "name": "four-x-web",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "private": true,
   "description": "Gabriel's Landing, a small three.js space 4X",
   "scripts": {

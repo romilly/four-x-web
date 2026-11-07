@@ -8,6 +8,10 @@ and at the foot of the orders panel) and is recorded in every saved game.
 The save-file format has its own number (`version` in a save); it changes only when the shape of a saved
 game changes.
 
+## 1.8.1 (2026-11-07)
+
+- In the Scores table, wins are shown in green, losses in red and abandoned games in yellow.
+
 ## 1.8.0 (2026-11-07)
 
 - **Scores:** a new tab in the ? panel shows your record in this browser: wins, losses and abandoned games for
