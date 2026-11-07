@@ -160,8 +160,15 @@ button{font:inherit;color:inherit;cursor:pointer}
 .newg{margin-top:16px;padding-top:12px;border-top:1px solid var(--rule)}
 .newg h3{margin:0 0 8px;font:500 10px var(--f-data);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
 .diffs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-.diffs .btn.armed{background:var(--alarm);border-color:var(--alarm);color:var(--gold-ink)}
+.diffs .btn.armed,#resetScores.armed{background:var(--alarm);border-color:var(--alarm);color:var(--gold-ink)}
 #diffNote,#saveNote,#loadSummary{margin-top:8px;font-size:12.5px}
+#scoreTable{width:100%;border-collapse:collapse;margin:4px 0 8px;font:500 12.5px var(--f-data)}
+#scoreTable th{font:600 12px var(--f-body);color:var(--dim);text-align:right;padding:5px 4px;border-bottom:1px solid var(--rule)}
+#scoreTable th:first-child,#scoreTable td:first-child{text-align:left}
+#scoreTable td{text-align:right;padding:6px 4px;border-bottom:1px solid rgba(38,48,77,.6);white-space:nowrap}
+#scoreTable td.zero{color:var(--dim);opacity:.6}
+#scoreTable tr.total td{border-bottom:0;color:var(--gold)}
+#scoreTable td:first-child{font:600 12.5px var(--f-body)}
 .linkbox{width:100%;margin-top:8px;padding:7px 9px;border:1px solid var(--rule);border-radius:6px;background:rgba(6,9,19,.5);color:var(--ink);font:500 12px var(--f-data)}
 .diffs.two,.diffs.levels{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media (min-width:760px){.diffs.levels{grid-template-columns:repeat(4,minmax(0,1fr))}}
@@ -296,7 +303,7 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
       <button class="btn small" data-close="helpModal">Close</button>
     </div>
     <div class="tabs" role="tablist" aria-orientation="vertical">
-      <button role="tab" data-tab="basics">Basics</button><button role="tab" data-tab="status">Status</button><button role="tab" data-tab="fleets">Fleets</button><button role="tab" data-tab="planets">Planets</button><button role="tab" data-tab="combat">Combat</button><button role="tab" data-tab="research">Research</button><button role="tab" data-tab="controls">Controls</button><button role="tab" data-tab="game">Game</button><button role="tab" data-tab="about">About</button>
+      <button role="tab" data-tab="basics">Basics</button><button role="tab" data-tab="status">Status</button><button role="tab" data-tab="fleets">Fleets</button><button role="tab" data-tab="planets">Planets</button><button role="tab" data-tab="combat">Combat</button><button role="tab" data-tab="research">Research</button><button role="tab" data-tab="controls">Controls</button><button role="tab" data-tab="game">Game</button><button role="tab" data-tab="scores">Scores</button><button role="tab" data-tab="about">About</button>
     </div>
     <div class="tabp" data-panel="basics">
       <div class="tutcall" id="tutCall">
@@ -428,6 +435,15 @@ body.targeting #banner{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 80
         <h3>Tutorial</h3>
         <button class="btn" data-tut="start" id="tutRestart">Start the tutorial</button>
         <p class="note" id="tutNote">Starts a new, gentle galaxy and guides you through the first turns.</p>
+      </div>
+    </div>
+    <div class="tabp" data-panel="scores" hidden>
+      <div class="newg">
+        <h3>Your record in this browser</h3>
+        <table id="scoreTable"></table>
+        <p class="note">Each entry is wins – losses – abandoned. A game counts once: when it ends, or as abandoned if you leave it unfinished after turn 1. The tutorial isn't counted.</p>
+        <div class="acts"><button class="btn" id="resetScores">Reset scores</button></div>
+        <p class="note" id="scoreNote" role="status">Scores are kept only in this browser.</p>
       </div>
     </div>
     <div class="tabp" data-panel="about" hidden>
@@ -984,7 +1000,7 @@ $('end').onclick=()=>{
   state.rngState=rng.state;
   game=state;pending=[];targeting=null;picking=null;
   refresh();
-  if(game.over)showOver();
+  if(game.over){settle();showOver();}
 };
 
 function renderTech(){
@@ -1019,6 +1035,7 @@ function renderStatus(){
 }
 function showTab(tab){
   if(tab==='status')renderStatus();
+  if(tab==='scores')renderScores();
   document.querySelectorAll('#helpModal [data-tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===tab)));
   document.querySelectorAll('#helpModal [data-panel]').forEach(p=>p.hidden=p.dataset.panel!==tab);
 }
@@ -1092,7 +1109,7 @@ $('loadCancel').onclick=()=>{toLoad=null;$('loadConfirm').hidden=true;saveNote('
 $('loadGo').onclick=()=>{
   if(!toLoad)return;
   if(mode==='system')exitSystem();
-  tut=null;game=toLoad.game;pending=toLoad.orders;toLoad=null;sel=null;targeting=null;picking=null;
+  settle();tut=null;game=toLoad.game;pending=toLoad.orders;toLoad=null;sel=null;targeting=null;picking=null;
   buildStars();centerOn(game.stars[game.empires[0].home],true);refresh();
   $('loadConfirm').hidden=true;$('helpModal').hidden=true;saveNote(`Loaded galaxy ${game.seed} at turn ${game.turn}.`);
 };
@@ -1109,12 +1126,36 @@ document.querySelectorAll('[data-pick] [data-val]').forEach(b=>b.onclick=()=>{
   renderPicks();
 });
 function begin(g){
-  tut=null;
+  settle();tut=null;
   if(mode==='system')exitSystem();
   game=g;pending=[];sel=null;targeting=null;picking=null;
   buildStars();centerOn(game.stars[game.empires[0].home],true);refresh();
 }
 const startNew=d=>begin(newGame(Math.floor(Math.random()*900000)+100000,d,nextSet.size,nextSet.victory));
+// ---------- scores, kept in this browser ----------
+const SCORE_KEY='gr-scores-1';
+let scores=(()=>{try{return readScores(JSON.parse(localStorage.getItem(SCORE_KEY)));}catch(e){return emptyScores();}})();
+const saveScores=()=>{try{localStorage.setItem(SCORE_KEY,JSON.stringify(scores));}catch(e){}};
+// Count the current game, if it should be: when it ends, or when it is left unfinished after turn 1.
+function settle(){
+  if(tut)return;
+  const r=scoreOutcome(game);if(!r)return;
+  scores=addScore(scores,game,r);saveScores();game.scored=true;save();
+}
+let resetArmed=false;
+function renderScores(){
+  const sizes=Object.keys(SIZES),levels=Object.keys(DIFF),sum=cells=>RESULTS.map(r=>cells.reduce((n,c)=>n+c[r],0));
+  const td=(d,z,[w,l,a])=>`<td data-d="${d}" data-z="${z}"${w+l+a?'':' class="zero"'}>${w}–${l}–${a}</td>`;
+  const row=(label,d,cells)=>`<tr${d==='all'?' class="total"':''}><td>${label}</td>${cells.map((c,i)=>td(d,sizes[i],c)).join('')}${td(d,'all',sum(cells.map(([win,loss,abandoned])=>({win,loss,abandoned}))))}</tr>`;
+  const rows=levels.map(d=>row(DIFF[d].label,d,sizes.map(z=>sum([scores[d][z]]))));
+  rows.push(row('All','all',sizes.map(z=>sum(levels.map(d=>scores[d][z])))));
+  $('scoreTable').innerHTML=`<thead><tr><th></th>${sizes.map(z=>`<th>${SIZES[z].label}</th>`).join('')}<th>All</th></tr></thead><tbody>${rows.join('')}</tbody>`;
+  resetArmed=false;$('resetScores').classList.remove('armed');$('scoreNote').textContent='Scores are kept only in this browser.';
+}
+$('resetScores').onclick=()=>{
+  if(!resetArmed){resetArmed=true;$('resetScores').classList.add('armed');$('scoreNote').textContent='Tap again to clear every score in this browser.';return;}
+  scores=emptyScores();saveScores();renderScores();$('scoreNote').textContent='Scores cleared.';
+};
 // ---------- replaying a galaxy: restart it, or share it as a link ----------
 const SITE_URL='https://romilly.github.io/four-x-web/';
 const RESTART_NOTE='Restart plays this galaxy again from turn 1, with the same size, victory and difficulty. Bookmark or share the link to play it again later.';
@@ -1207,6 +1248,7 @@ const colonyAimed=()=>view.fleets.some(f=>f.owner===0&&f.target===tut.best)||gam
 const scoutSent=()=>view.fleets.some(f=>f.owner===0&&f.dest!=null&&has(f,'scout'))||game.turn>tut.scoutTurn;
 function startTutorial(){
   if(mode==='system')exitSystem();
+  settle();
   game=newGame(TUTORIAL_SEED,'easy');pending=[];sel=null;selPlanet=null;targeting=null;picking=null;
   const free=planetsAt(game,homeId()).filter(p=>p.owner<0&&p.cap>0).sort((a,b)=>b.cap-a.cap);
   tut={step:0,mark:game.turn,best:free[0].id,poor:free[free.length-1].id,scoutTurn:Infinity,sawTech:false};

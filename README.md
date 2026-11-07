@@ -39,6 +39,14 @@ Under **?** → Game, choose a galaxy size and a victory condition, then tap a d
 - **Total victory:** be the last empire standing.
 - **Dominance:** hold 60% of all habitable planets, or be the last standing. A rival that reaches 60% first wins.
 
+## Scores
+
+Under **?** → Scores, each browser keeps a tally of wins, losses and abandoned games by difficulty and galaxy size,
+with totals. A game counts once: as a win or loss when it ends, or as abandoned if you leave it unfinished after
+turn 1 (by starting a new game, restarting, opening a galaxy link or loading a save). The tutorial isn't counted.
+**Reset scores** clears the tally after a second tap. Scores are stored in the browser (`gr-scores-1`), so they
+don't follow you to another browser or device.
+
 ## Replaying a galaxy
 
 Every galaxy is fixed by its number (seed), size, victory condition and difficulty. Under **?** → Game,

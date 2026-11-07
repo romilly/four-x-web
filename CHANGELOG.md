@@ -8,6 +8,13 @@ and at the foot of the orders panel) and is recorded in every saved game.
 The save-file format has its own number (`version` in a save); it changes only when the shape of a saved
 game changes.
 
+## 1.8.0 (2026-11-07)
+
+- **Scores:** a new tab in the ? panel shows your record in this browser: wins, losses and abandoned games for
+  each difficulty and galaxy size, with totals. A game counts once, when it ends, or as abandoned if you leave it
+  unfinished after turn 1 by starting a new game, restarting, opening a galaxy link or loading a save. Leaving on
+  turn 1 and the tutorial don't count. **Reset scores** clears the tally after a second tap.
+
 ## 1.7.1 (2026-11-06)
 
 - **Fix:** population growth no longer depends on how the game happens to number planets. Planets used to grow on

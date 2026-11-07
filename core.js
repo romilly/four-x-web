@@ -1,6 +1,6 @@
 // CORE-START — pure domain core: plain data in, plain data out. No DOM, no I/O, no clock.
 // The game's version, semantic versioning. Keep package.json and CHANGELOG.md in step (a test checks).
-const GAME_VERSION='1.7.1';
+const GAME_VERSION='1.8.0';
 // A small Easy galaxy whose home system has a poor and a rich free planet; the tutorial is played in it.
 const TUTORIAL_SEED=164;
 const TYPES=['fighter','colony','scout'];
@@ -497,6 +497,27 @@ function aiOrders(s,e,rng){
   }
   return out;
 }
+// ---------- scores ----------
+// Each browser keeps a tally of results by difficulty and galaxy size. A game counts once: as a win or loss when it
+// ends, or as abandoned if it is left unfinished after turn 1. The interface leaves the tutorial out.
+const RESULTS=['win','loss','abandoned'];
+const scoreOutcome=g=>g.scored?null:g.over?(g.over.win?'win':'loss'):g.turn>1?'abandoned':null;
+const emptyScores=()=>Object.fromEntries(Object.keys(DIFF).map(d=>[d,Object.fromEntries(Object.keys(SIZES).map(z=>[z,{win:0,loss:0,abandoned:0}]))]));
+function addScore(scores,g,result){
+  const s=JSON.parse(JSON.stringify(scores));
+  s[g.difficulty][g.size][result]++;
+  return s;
+}
+// A stored tally, made safe: anything missing or damaged counts as zero.
+function readScores(x){
+  const s=emptyScores();
+  if(!x||typeof x!=='object')return s;
+  for(const d in s)for(const z in s[d])for(const r of RESULTS){
+    const n=x?.[d]?.[z]?.[r];
+    if(Number.isInteger(n)&&n>=0)s[d][z][r]=n;
+  }
+  return s;
+}
 // ---------- replaying a galaxy ----------
 // A galaxy is fixed by its seed, size, victory condition and difficulty, so it can be restarted at turn 1, or shared
 // as a link that opens it: ?galaxy=SEED&size=small&victory=total&difficulty=normal (all but galaxy optional).
@@ -577,6 +598,6 @@ function checkSave(g,orders){
   return null;
 }
 // CORE-END
-if(typeof module!=='undefined')module.exports={GAME_VERSION,TUTORIAL_SEED,TYPES,COST,SHIP,TECH,techCost,DIFF,diffOf,EMP,SIZES,sizeOf,VICTORY,habitableCount,dominanceOf,STAR_KINDS,PLANET_TYPES,SYSTEMS,makeRng,adjOf,hops,route,hostileStars,restartGame,galaxyLink,galaxyFromLink,
+if(typeof module!=='undefined')module.exports={GAME_VERSION,TUTORIAL_SEED,TYPES,COST,SHIP,TECH,techCost,DIFF,diffOf,EMP,SIZES,sizeOf,VICTORY,habitableCount,dominanceOf,STAR_KINDS,PLANET_TYPES,SYSTEMS,makeRng,adjOf,hops,route,hostileStars,restartGame,galaxyLink,galaxyFromLink,RESULTS,scoreOutcome,emptyScores,addScore,readScores,
   fleetSpeed,countTypes,has,planetsAt,capOf,shipyardCapacity,incomeOf,empireStatus,vision,updateIntel,fogView,sightOf,newGame,applyOrders,previewOrders,settleChoice,colonyOrder,resolveTurn,aiOrders,
   SAVE_FORMAT,SAVE_VERSION,SAVE_YAML,toSave,fromSave,checkSave};
